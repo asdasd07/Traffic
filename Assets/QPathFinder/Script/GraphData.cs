@@ -74,7 +74,7 @@ public class Path {
         Gizmos.DrawLine(a.Position, b.Position);
     }
     public void Visualize() {
-        maxInQueue = (int)Mathf.Floor(Vector3.Distance(a.Position, b.Position) / 1);
+        maxInQueue = (int)Mathf.Floor(Vector3.Distance(a.Position, b.Position) / 1 - 0.5f);
         maxInQueue = maxInQueue < 1 ? 1 : maxInQueue;
         if (tr != null) {
             tr.position = (a.Position + b.Position) / 2f;

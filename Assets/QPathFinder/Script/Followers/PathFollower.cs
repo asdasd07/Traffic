@@ -8,6 +8,7 @@ public class PathFollower : MonoBehaviour {
 
     public float moveSpeed = 10f;
     public float rotateSpeed = 10f;
+    public float velocity = 0;
 
     protected int _currentIndex;
     Coroutine rou;
@@ -36,7 +37,8 @@ public class PathFollower : MonoBehaviour {
         int QueuePos;
         int index = 0;
         int end = path.Count;
-        float accelerate = 0, dist, velocity = 0, tar = 0, tmp = 0;
+        float dist, dist1, tar = 0, tmp = 0;
+        bool endpoint = false;
         //Rigidbody rb = GetComponent<Rigidbody>();
         transform.position = path[0].a.Position;
         Vector3 dir = path[0].a.Position - path[0].b.Position;
@@ -45,57 +47,85 @@ public class PathFollower : MonoBehaviour {
             yield return null;
         }
         index++;
-        Vector3 target = path[index].a.Position;
+        Vector3 target;
+        float back;
         Vector3? target2 = null;
         transform.position = path[index].a.Position;
         transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(path[index].b.Position - transform.position), 400f);
         QueuePos = path[index].EnterQueue();
         dir = path[index].a.Position - path[index].b.Position;
         dir.Normalize();
-        while (index < end - 1) {
+        float padding = 0.4f;
+        back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
+        target = path[index].b.Position + dir * back;
+        while (index < end) {
             dist = Vector3.Distance(transform.position, target);
-            if (target2 != null) {
-                accelerate = 1;
+            dist1 = Vector3.Distance(transform.position, path[index].b.Position);
+            float angle = dist1 > 0.2f ? Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target - transform.position)) : Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target2 ?? target - transform.position));
+            //if (dist < 0.5f) {
+            //    if (!endpoint) {
+            //        tar = 0.1f;
+            //    } else {
+            //        tar = 1.0f;
+            //    }
+            //} else if (dist < 1f) {
+            //    tar = 1.2f;
+            //} else if (dist < 1.5f) {
+            //    tar = 1.7f;
+            //} else {
+            //    tar = 3;
+            //}
+
+            if (dist < 0.5f && !endpoint) {
+                tar = 0.1f;
             } else {
-                accelerate = Mathf.Clamp(dist - 0.1f, 0, 1) * 2;
+                //y = 0.992881 + 0.18181*x - 0.4129524*x^2 + 0.4111319*x^3
+                tar = 1f + 0.2f * dist - 0.4f * Mathf.Pow(dist, 2) + 0.4f * Mathf.Pow(dist, 3);
+                //tar = dist * dist * 1.1f - dist * 1.4f + 1.5f;
+                tar = tar > 3 ? 3 : tar;
             }
-            //velocity += accelerate * Time.deltaTime;
-            //velocity = Mathf.Clamp(velocity, 0f, 1f);
-            //velocity = Mathf.Clamp(dist, 0f, 2f) * Time.deltaTime*50;
-            if (dist < 0.2f) {
-                tar = 0.2f;
-            } else if (dist < 1f) {
-                tar = 1f;
-            } else if (dist < 1.5f) {
-                tar = 1f;
-            } else {
-                tar = 3;
+            if (dist >= 0.4f) {
+                tar = angle < 3 ? tar : tar / (angle / 3);
             }
-            velocity = Mathf.SmoothDamp(velocity, tar, ref tmp, 0.4f);
-            if (dist < 0.1f) {
-                if (target2 != null) {
-                    target = (Vector3)target2;
-                    target2 = null;
-                } else {
-                    Vector3 back = path[index].maxInQueue > 1 ? dir * (QueuePos - path[index].sQueue + 0.6f) : Vector3.zero;
-                    target = path[index].b.Position + back;
-                    if (path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
-                        target = path[index].b.Position;
-                        path[index].LeaveQueue();
-                        index++;
-                        QueuePos = path[index].EnterQueue();
-                        dir = path[index].a.Position - path[index].b.Position;
-                        dir.Normalize();
-                        back = path[index].maxInQueue > 1 ? dir * (QueuePos - path[index].sQueue + 0.6f) : Vector3.zero;
-                        target2 = path[index].b.Position + back;
-                    }
+
+
+            velocity = Mathf.SmoothDamp(velocity, tar, ref tmp, 0.3f);
+
+            //centerpoint reached, index++, endpoint false
+            if (endpoint && dist1 < padding) {
+                endpoint = false;
+                index++;
+                if (index + 1 == end) {
+                    break;
                 }
-            } else {
-                transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target - transform.position), 300f * Time.deltaTime);
-                transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
-                //velocity += Time.deltaTime;
-                //transform.position = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.smoothDeltaTime);
+                dir = path[index].a.Position - path[index].b.Position;
+                dir.Normalize();
+                if (index + 1 != end) {
+                    target2 = path[index + 1].b.Position;
+                }
+                back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
             }
+
+            //midpoint reached, recalculate next midpoint
+            if (dist < 0.4f) {
+                float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
+                back = back > prop ? prop : back;
+                //canEnter, go to centerpoint, endpoint true
+                if (!endpoint && dist1 < 1.1f && path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
+                    endpoint = true;
+                    path[index].LeaveQueue();
+                    QueuePos = path[index + 1].EnterQueue();
+                    //back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
+                    dist = Vector3.Distance(transform.position, target);
+                    back = 0;
+                }
+            }
+            target = path[index].b.Position + dir * back;
+            if (dist >= 0.1f) {
+                transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target - transform.position), 100f * Time.deltaTime);
+                transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
+            }
+            //transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
             yield return null;
         }
         path[index].LeaveQueue();

@@ -21,7 +21,8 @@ public class Joint {
 
 [System.Serializable]
 public class Street : MonoBehaviour {
-    Junction f, t;
+    [HideInInspector]
+    public Junction f, t;
     public Vector3 from, to;
     public Node spawn, target;
     public Joint[] joints = new Joint[2];
@@ -68,33 +69,35 @@ public class Street : MonoBehaviour {
         norm.Normalize();
         Vector2 p2 = Vector2.Perpendicular(new Vector2(norm.x, norm.z)).normalized;
         Vector3 perpedic = new Vector3(p2.x, 0, p2.y).normalized;
-        Vector3 jPerpedic = Perpedic(f);
-        Vector3 jPerpedic2 = Perpedic(t);
-        float scale = Mathf.Max(perpedic.x / jPerpedic.x-5, perpedic.z / jPerpedic.z-5)+5;
-        float scale2 = Mathf.Max(perpedic.x / jPerpedic2.x-5, perpedic.z / jPerpedic2.z-5)+5;
+        Vector3 jPerpedic = Vector3.Project(Perpedic(f), norm) + perpedic;
+        Vector3 jPerpedic2 = Vector3.Project(Perpedic(t), -norm) + perpedic;
         for (int i = 0; i < joints[0].input.Count; i++) {
-            joints[0].input[i].SetPosition(f.transform.position + norm * fmax + jPerpedic* scale * (0.6f + i));
+            joints[0].input[i].SetPosition(f.transform.position + norm * fmax + jPerpedic * (0.6f + i));
         }
         for (int i = 0; i < joints[0].output.Count; i++) {
-            joints[0].output[i].SetPosition(f.transform.position + norm * fmax - jPerpedic * scale * (0.6f + i));
+            joints[0].output[i].SetPosition(f.transform.position + norm * fmax - jPerpedic * (0.6f + i));
         }
         for (int i = 0; i < joints[1].input.Count; i++) {
-            joints[1].input[i].SetPosition(t.transform.position - norm * tmax - jPerpedic2 * scale2 * (0.6f + i));
+            joints[1].input[i].SetPosition(t.transform.position - norm * tmax - jPerpedic2 * (0.6f + i));
         }
         for (int i = 0; i < joints[1].output.Count; i++) {
-            joints[1].output[i].SetPosition(t.transform.position - norm * tmax + jPerpedic2 * scale2 * (0.6f + i));
+            joints[1].output[i].SetPosition(t.transform.position - norm * tmax + jPerpedic2 * (0.6f + i));
         }
         foreach (Path p in paths) {
             p.Visualize();
         }
     }
     Vector3 Perpedic(Junction j) {
+        Vector3 perpedic = new Vector3(-(to.z - from.z), 0, to.x - from.x);
+        perpedic.Normalize();
         int index = j.street.IndexOf(this);
+        if (index == -1) {
+            return perpedic;
+        }
         int prev = index > 0 ? index - 1 : j.street.Count - 1;
         prev = prev < 0 ? 0 : prev;
         int next = index < j.street.Count - 1 ? index + 1 : 0;
-        Vector3 perpedic = new Vector3(-(to.z - from.z), 0, to.x - from.x);
-        perpedic.Normalize();
+        next = next == prev ? index : next;
         if (prev != next) {
             Vector3 a = j.street[prev].to - j.street[prev].from;
             a.Normalize();
@@ -118,7 +121,15 @@ public class Street : MonoBehaviour {
             //perpedic = new Vector3(v.x / v.z * perpedic.z, 0, v.z / v.x * perpedic.x);
             perpedic = v;
         }
+        if (index == next && index != 0) {
+            perpedic = -perpedic;
+        }
         return perpedic;
+    }
+    public void Recalculate() {
+        Calculate();
+        f.Calculate();
+        t.Calculate();
     }
 
     public void Calculate() {
@@ -129,7 +140,9 @@ public class Street : MonoBehaviour {
         List<Node> nod3 = new List<Node>();
         List<Node> nod4 = new List<Node>();
         foreach (Path p in paths) {
-            DestroyImmediate(p.tr.gameObject);
+            if (p.tr != null) {
+                DestroyImmediate(p.tr.gameObject);
+            }
         }
         paths.Clear();
 
@@ -167,5 +180,23 @@ public class Street : MonoBehaviour {
         }
         joints[0] = new Joint(nod4, nod1);
         joints[1] = new Joint(nod2, nod3);
+    }
+    public void Select(bool light = true) {
+        List<MeshRenderer> mats = new List<MeshRenderer>();
+        Material mat = new Material(source: paths.Find(p => p.tr != null).tr.GetComponent<MeshRenderer>().sharedMaterial);
+        foreach (Path p in paths) {
+            if (p.tr) {
+                mats.Add(p.tr.GetComponent<MeshRenderer>());
+            }
+        }
+        if (light) {
+            mat.color = new Color(1f, 1f, 1f);
+        } else {
+            mat.color = new Color(0.5f, 0.5f, 0.5f);
+        }
+        foreach (MeshRenderer m in mats) {
+            m.material = mat;
+        }
+
     }
 }
