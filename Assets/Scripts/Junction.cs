@@ -71,13 +71,12 @@ public class Phase {
     }
 }
 
-
 [System.Serializable]
 public class Junction : MonoBehaviour {
     public List<Joint> joints = new List<Joint>();
     public List<Street> street = new List<Street>();
     public List<Path> paths = new List<Path>();
-    List<int[]> streetEnd = new List<int[]>();
+    public List<Vector2Int> streetEnd = new List<Vector2Int>();
     public float max = 1;
     public int phase = 0;
     public bool rondo = false;
@@ -128,8 +127,10 @@ public class Junction : MonoBehaviour {
         return true;
     }
     public void AddStreet(Street s, int start = 0) {
+        Debug.Log(street.Count);
+        Debug.Log(streetEnd.Count);
         street.Add(s);
-        int[] a = { street.IndexOf(s), start };
+        Vector2Int a = new Vector2Int(street.IndexOf(s), start);
         streetEnd.Add(a);
         Calculate();
     }
@@ -338,17 +339,17 @@ public class Junction : MonoBehaviour {
     }
     private void SortStreets() {
         Vector3 forw = GetJoint(0).pos - transform.position;
-        streetEnd.Sort(delegate (int[] a, int[] b) {
-            float angleA = Vector3.SignedAngle(forw, street[a[0]].joints[a[1]].pos - transform.position, Vector3.up);
-            float angleB = Vector3.SignedAngle(forw, street[b[0]].joints[b[1]].pos - transform.position, Vector3.up);
+        streetEnd.Sort(delegate (Vector2Int a, Vector2Int b) {
+            float angleA = Vector3.SignedAngle(forw, street[a.x].joints[a.y].pos - transform.position, Vector3.up);
+            float angleB = Vector3.SignedAngle(forw, street[b.x].joints[b.y].pos - transform.position, Vector3.up);
             if (angleA == angleB) return 0;
             else if (angleA > angleB) return -1;
             return 1;
         });
         List<Street> sortedStreet = new List<Street>();
         for (int i = 0; i < streetEnd.Count; i++) {
-            sortedStreet.Add(street[streetEnd[i][0]]);
-            streetEnd[i][0] = i;
+            sortedStreet.Add(street[streetEnd[i].x]);
+            streetEnd[i] = new Vector2Int(i, streetEnd[i].y);
         }
         street = sortedStreet;
         //if (streetEnd.Count == 4) {
@@ -356,7 +357,7 @@ public class Junction : MonoBehaviour {
         //}
     }
     Joint GetJoint(int index) {
-        return street[streetEnd[index][0]].joints[streetEnd[index][1]];
+        return street[streetEnd[index].x].joints[streetEnd[index].y];
     }
     private void OnDestroy() {
         Clear();
