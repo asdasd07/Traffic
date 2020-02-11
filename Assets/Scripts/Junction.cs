@@ -48,22 +48,34 @@ public class Phase {
             switch (i) {
                 case 0:
                     if (mode % 2 == 0) {
-                        Routes = (from x in dic where x.Value == "32" || x.Value == "00" || x.Value == "01" || x.Value == "02" select x.Key).ToList();
+                        Routes = (from x in dic where x.Value == "00" || x.Value == "01" || x.Value == "02" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "32" select x.Key);
+                        }
                     } else { Routes = (from x in dic where x.Value == "32" || x.Value == "12" || x.Value == "00" || x.Value == "20" select x.Key).ToList(); }
                     break;
                 case 1:
                     if (mode < 2) {
-                        Routes = (from x in dic where x.Value == "02" || x.Value == "10" || x.Value == "11" || x.Value == "12" select x.Key).ToList();
+                        Routes = (from x in dic where x.Value == "10" || x.Value == "11" || x.Value == "12" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "02" select x.Key);
+                        }
                     } else { Routes = (from x in dic where x.Value == "02" || x.Value == "22" || x.Value == "10" || x.Value == "30" select x.Key).ToList(); }
                     break;
                 case 2:
                     if (mode % 2 == 0) {
-                        Routes = (from x in dic where x.Value == "12" || x.Value == "20" || x.Value == "21" || x.Value == "22" select x.Key).ToList();
+                        Routes = (from x in dic where x.Value == "20" || x.Value == "21" || x.Value == "22" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "12" select x.Key);
+                        }
                     } else { Routes = (from x in dic where x.Value == "21" || x.Value == "22" || x.Value == "01" || x.Value == "02" select x.Key).ToList(); }
                     break;
                 case 3:
                     if (mode < 2) {
-                        Routes = (from x in dic where x.Value == "22" || x.Value == "30" || x.Value == "31" || x.Value == "32" select x.Key).ToList();
+                        Routes = (from x in dic where x.Value == "30" || x.Value == "31" || x.Value == "32" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "22" select x.Key);
+                        }
                     } else { Routes = (from x in dic where x.Value == "11" || x.Value == "12" || x.Value == "31" || x.Value == "32" select x.Key).ToList(); }
                     break;
             }
@@ -94,14 +106,16 @@ public class Junction : MonoBehaviour {
     IEnumerator PhaseChanger() {
         while (true) {
             yield return new WaitUntil(() => isFree());
-            yield return new WaitForSeconds(1);
             phase = (phase + 1) % phases.Length;
-            foreach (int i in phases[phase].Routes) {
-                paths[i].Block = 2;
-            }
-            yield return new WaitForSeconds(5);
-            foreach (Path p in paths) {
-                p.Block = 0;
+            if (phases[phase].Routes.Count != 0) {
+                yield return new WaitForSeconds(1);
+                foreach (int i in phases[phase].Routes) {
+                    paths[i].Block = 2;//free
+                }
+                yield return new WaitForSeconds(5);
+                foreach (Path p in paths) {
+                    p.Block = 0;//blocked
+                }
             }
         }
     }
@@ -127,15 +141,18 @@ public class Junction : MonoBehaviour {
         return true;
     }
     public void AddStreet(Street s, int start = 0) {
-        Debug.Log(street.Count);
-        Debug.Log(streetEnd.Count);
         street.Add(s);
         Vector2Int a = new Vector2Int(street.IndexOf(s), start);
         streetEnd.Add(a);
         Calculate();
     }
     public void Calculate() {
-        max = street.Count < 2 ? 0 : street.Count * street.Count * 0.2f + street.Count * 0f; ;
+        int maxinou = 0;
+        foreach (Street s in street) {
+            maxinou = Mathf.Max(s.ifrom, s.ito, maxinou);
+        }
+        maxinou = Mathf.Max(street.Count, maxinou);
+        max = maxinou < 2 ? 0 : maxinou * maxinou * 0.2f + maxinou * 0f;
         SortStreets();
         joints = new List<Joint>();
         for (int i = 0; i < streetEnd.Count; i++) {
@@ -150,19 +167,17 @@ public class Junction : MonoBehaviour {
             return;
         }
         //L S P
-        Vector3 forw = joints[0].pos - transform.position;
-
         if (joints.Count > 4) {
             rondo = true;
         }
         if (rondo) {
             List<Node> circle = new List<Node>();
             for (int i = 0; i < joints.Count; i++) {
-                for (int j = joints[i].output.Count - 1; j >= 0; j--) {
-                    circle.Add(joints[i].output[j]);
+                for (int j = GetJoint(i).output.Count - 1; j >= 0; j--) {
+                    circle.Add(GetJoint(i).output[j]);
                 }
-                for (int j = 0; j < joints[i].input.Count; j++) {
-                    circle.Add(joints[i].input[j]);
+                for (int j = 0; j < GetJoint(i).input.Count; j++) {
+                    circle.Add(GetJoint(i).input[j]);
                 }
             }
             for (int i = 0; i < circle.Count - 1; i++) {
@@ -175,19 +190,19 @@ public class Junction : MonoBehaviour {
         }
         if (joints.Count == 2) {
             for (int k = 0; k < 2; k++) {
-                int jmax = Mathf.Max(joints[0 + k].input.Count, joints[1 - k].output.Count);
+                int jmax = Mathf.Max(GetJoint(k).input.Count, GetJoint(1 - k).output.Count);
                 int j = 0;
-                if (joints[0 + k].input.Count < joints[1 - k].output.Count) {
+                if (GetJoint( k).input.Count < GetJoint(1 - k).output.Count) {
                     for (int i = 0; i < jmax; i++) {
-                        Path cir = new Path(joints[0 + k].input[j], joints[1 - k].output[i], transform);
+                        Path cir = new Path(GetJoint(k).input[j], GetJoint(1 - k).output[i], transform);
                         paths.Add(cir);
-                        j = j + 1 < joints[0 + k].input.Count ? j + 1 : j;
+                        j = j + 1 < GetJoint(k).input.Count ? j + 1 : j;
                     }
                 } else {
                     for (int i = 0; i < jmax; i++) {
-                        Path cir = new Path(joints[0 + k].input[i], joints[1 - k].output[j], transform);
+                        Path cir = new Path(GetJoint(k).input[i], GetJoint(1 - k).output[j], transform);
                         paths.Add(cir);
-                        j = j + 1 < joints[1 - k].output.Count ? j + 1 : j;
+                        j = j + 1 < GetJoint(1 - k).output.Count ? j + 1 : j;
                     }
                 }
             }
@@ -196,20 +211,6 @@ public class Junction : MonoBehaviour {
         List<Path>[][] tab = new List<Path>[joints.Count][];
         phases = new Phase[joints.Count];
         if (joints.Count == 3) {
-            float angleA = Vector3.SignedAngle(forw, joints[1].pos - joints[0].pos, Vector3.up);
-            float angleB = Vector3.SignedAngle(forw, joints[2].pos - joints[0].pos, Vector3.up);
-            if (angleA > 120) {
-                Joint temp = joints[0];
-                joints[0] = joints[1];
-                joints[1] = joints[2];
-                joints[2] = temp;
-            }
-            if (angleB < -120) {
-                Joint temp = joints[0];
-                joints[0] = joints[2];
-                joints[2] = joints[1];
-                joints[1] = temp;
-            }
             tab[0] = WayPaths(0);
             tab[1] = WayPaths(1);
             tab[2] = WayPaths(2);
@@ -230,7 +231,7 @@ public class Junction : MonoBehaviour {
         }
         if (joints.Count == 4) {
             int mode = 0;
-            if (joints[0].input.Count > 1 && joints[2].input.Count > 1 && joints[1].output.Count > 0 && joints[3].output.Count > 0) {
+            if (GetJoint(0).input.Count > 1 && GetJoint(2).input.Count > 1 && GetJoint(1).output.Count > 0 && GetJoint(3).output.Count > 0) {
                 mode = 1;//faza II1
                 tab[0] = WayPaths(0);
                 tab[2] = WayPaths(2);
@@ -238,7 +239,7 @@ public class Junction : MonoBehaviour {
                 tab[0] = WayPaths(0, true);
                 tab[2] = WayPaths(2, true);
             }
-            if (joints[1].input.Count > 1 && joints[3].input.Count > 1 && joints[0].output.Count > 0 && joints[2].output.Count > 0) {
+            if (GetJoint(1).input.Count > 1 && GetJoint(3).input.Count > 1 && GetJoint(0).output.Count > 0 && GetJoint(2).output.Count > 0) {
                 mode += 2;//faza II2
                 tab[1] = WayPaths(1);
                 tab[3] = WayPaths(3);
@@ -253,7 +254,6 @@ public class Junction : MonoBehaviour {
                     foreach (Path p in tab[i][j]) {
                         paths.Add(p);
                         dic.Add(c, i.ToString() + j.ToString());
-                        Debug.Log(c + " " + i + " " + j);
                         c++;
                     }
                 }
@@ -277,7 +277,8 @@ public class Junction : MonoBehaviour {
             tabs[i] = new List<Path>();
         }
         //L S P
-        int sum = joints[curent].input.Count;
+        int sum = GetJoint(curent).input.Count;
+        //Debug.Log(GetJoint(curent).input.Count + " " + GetJoint(curent).output.Count);
         if (sum == 0) {
             return tabs;
         }
@@ -286,28 +287,34 @@ public class Junction : MonoBehaviour {
         int sstart = 0;
         if (joints.Count == 3) {
             //4 wjazd ma 0 dróg
-            maxp = p == 3 ? 0 : joints[p].output.Count;
-            maxs = s == 3 ? 0 : joints[s].output.Count;
-            maxl = l == 3 ? 0 : joints[l].output.Count;
+            maxp = p == 3 ? 0 : GetJoint(p).output.Count;
+            maxs = s == 3 ? 0 : GetJoint(s).output.Count;
+            maxl = l == 3 ? 0 : GetJoint(l).output.Count;
             //rozjazd na prawo i prosto
-            if (s != 3 && p != 3 && joints[p].output.Count != 0 && joints[s].output.Count != 0) {
+            if (s != 3 && p != 3 && GetJoint(p).output.Count != 0 && GetJoint(s).output.Count != 0) {
                 sum++;
             }
             //rozjazd na lewo i prosto
-            if (s != 3 && l != 3 && joints[s].output.Count != 0 && joints[l].output.Count != 0) {
+            if (s != 3 && l != 3 && GetJoint(s).output.Count != 0 && GetJoint(l).output.Count != 0) {
                 sum++;
                 sstart--;
+            }
+            if (s == 3 && GetJoint(p).output.Count != 0 && GetJoint(l).output.Count != 0) {
+                sum++;
             }
         } else {
-            maxp = joints[p].output.Count;
-            maxs = joints[s].output.Count;
-            maxl = joints[l].output.Count;
-            if (joints[p].output.Count != 0 && joints[s].output.Count != 0) {
+            maxp = GetJoint(p).output.Count;
+            maxs = GetJoint(s).output.Count;
+            maxl = GetJoint(l).output.Count;
+            if (GetJoint(p).output.Count != 0 && GetJoint(s).output.Count != 0) {
                 sum++;
             }
-            if (single && joints[s].output.Count != 0 && joints[l].output.Count != 0) {
+            if (single && GetJoint(s).output.Count != 0 && GetJoint(l).output.Count != 0) {
                 sum++;
-                sstart--;
+                //sstart--;
+            }
+            if (GetJoint(s).output.Count == 0 && GetJoint(p).output.Count != 0 && GetJoint(l).output.Count != 0) {
+                sum++;
             }
         }
         sum = Mathf.Min(sum, maxs + maxp + maxl);
@@ -315,7 +322,7 @@ public class Junction : MonoBehaviour {
         for (int i = 1; i < sum + 1; i++) {
             int j = ((i % 3) + 1 + curent) % 4;
             if (joints.Count == 3 && j != 3 || joints.Count == 4) {
-                if (tab[i % 3] < joints[j].output.Count) {
+                if (tab[i % 3] < GetJoint(j).output.Count) {
                     tab[i % 3]++; //tab{0,1,0}psl
                     continue;
                 }
@@ -323,16 +330,18 @@ public class Junction : MonoBehaviour {
             sum++;
         }
         sstart += max - tab[0];
+        sstart = Mathf.Clamp(sstart, 0, max - 1);
+        //Debug.Log(sstart + " " + sum + " " + maxs + " " + max + " " + maxp + " " + maxl + " " + tab[0] + " " + tab[1] + " " + tab[2]);
         for (int i = 0; i < tab[0]; i++) {
-            Path pat = new Path(joints[curent].input[max - i - 1], joints[p].output[maxp - i - 1], transform);
+            Path pat = new Path(GetJoint(curent).input[max - i - 1], GetJoint(p).output[maxp - i - 1], transform);
             tabs[2].Add(pat);
         }
         for (int i = 0; i < tab[1]; i++) {
-            Path pat = new Path(joints[curent].input[sstart - i], joints[s].output[maxs - i - 1], transform);
+            Path pat = new Path(GetJoint(curent).input[sstart - i], GetJoint(s).output[maxs - i - 1], transform);
             tabs[1].Add(pat);
         }
         for (int i = 0; i < tab[2]; i++) {
-            Path pat = new Path(joints[curent].input[i], joints[l].output[i], transform);
+            Path pat = new Path(GetJoint(curent).input[i], GetJoint(l).output[i], transform);
             tabs[0].Add(pat);
         }
         return tabs;//lsp
@@ -346,17 +355,39 @@ public class Junction : MonoBehaviour {
             else if (angleA > angleB) return -1;
             return 1;
         });
+        if (street.Count == 3) {
+            float angleA = Vector3.SignedAngle(forw, GetJoint(1).pos - GetJoint(0).pos, Vector3.up);
+            float angleB = Vector3.SignedAngle(forw, GetJoint(2).pos - GetJoint(0).pos, Vector3.up);
+            if (angleA > 120) {
+                Vector2Int temp = streetEnd[0];
+                streetEnd[0] = streetEnd[1];
+                streetEnd[1] = streetEnd[2];
+                streetEnd[2] = temp;
+            }
+            if (angleB < -120) {
+                Vector2Int temp = streetEnd[0];
+                streetEnd[0] = streetEnd[2];
+                streetEnd[2] = streetEnd[1];
+                streetEnd[1] = temp;
+            }
+        }
         List<Street> sortedStreet = new List<Street>();
         for (int i = 0; i < streetEnd.Count; i++) {
             sortedStreet.Add(street[streetEnd[i].x]);
             streetEnd[i] = new Vector2Int(i, streetEnd[i].y);
         }
         street = sortedStreet;
+        //if (streetEnd.Count == 2) {
+        //    Debug.Log(GetJoint(0).input[0].ID + " " + GetJoint(1).input[0].ID);
+        //}
+        //if (streetEnd.Count == 3) {
+        //    Debug.Log(GetJoint(0).input[0].ID + " " + GetJoint(1).input[0].ID + " " + GetJoint(2).input[0].ID);
+        //}
         //if (streetEnd.Count == 4) {
         //    Debug.Log(GetJoint(0).input[0].ID + " " + GetJoint(1).input[0].ID + " " + GetJoint(2).input[0].ID + " " + GetJoint(3).input[0].ID);
         //}
     }
-    Joint GetJoint(int index) {
+    public Joint GetJoint(int index) {
         return street[streetEnd[index].x].joints[streetEnd[index].y];
     }
     private void OnDestroy() {

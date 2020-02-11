@@ -18,7 +18,9 @@ public class PathFinder : MonoBehaviour {
     List<Transform> Cars = new List<Transform>();
     float timer1 = 0, timer2 = 0;
     Transform CarsBox;
-    public int amount = 0;
+    public int amount = 10;
+    public int maxCars = 100;
+    public float CarsFreq = 0.1f;
     [HideInInspector]
     public GraphData graphData = new GraphData();
 
@@ -42,14 +44,17 @@ public class PathFinder : MonoBehaviour {
         fol.Follow(paths);
     }
     public List<Path> RandomPath() {
-        int a = Random.Range(0, graphData.Spawn.Count);
-        int b = a;
-        while (b == a) {
-            b = Random.Range(0, graphData.Target.Count);
+        List<Node> nod = null;
+        while (nod == null || nod.Count == 0) {
+            int a = Random.Range(0, graphData.Spawn.Count);
+            int b = a;
+            while (b == a) {
+                b = Random.Range(0, graphData.Target.Count);
+            }
+            Node spa = graphData.Spawn[a];
+            Node tar = graphData.Target[b];
+            nod = FindShortedPathSynchronousInternal(spa.ID, tar.ID);
         }
-        Node spa = graphData.Spawn[a];
-        Node tar = graphData.Target[b];
-        List<Node> nod = FindShortedPathSynchronousInternal(spa.ID, tar.ID);
         List<Path> pat = NodesToPath(nod);
         return pat;
     }
@@ -62,8 +67,8 @@ public class PathFinder : MonoBehaviour {
                     Cars.RemoveAll(item => item == null);
                     amount = Cars.Count;
                 }
-                if (timer1 <= 0 && graphData.maxCars > amount) {
-                    timer1 = graphData.CarsFreq;
+                if (timer1 <= 0 && maxCars > amount) {
+                    timer1 = CarsFreq;
                     SpawnRandom();
                     amount++;
                 }
@@ -79,6 +84,7 @@ public class PathFinder : MonoBehaviour {
         List<Path> paths = new List<Path>();
         for (int i = 0; i < nodes.Count - 1; i++) {
             Path p = graphData.FindPath(nodes[i].ID, nodes[i + 1].ID);
+            if (p == null) { return null; }
             //Path p = graphData.pathsSorted. .AllStreets.Paths.Find (item => item.a.ID == nodes[i].ID && item.b.ID == nodes[i + 1].ID);
             if (p == null) {
                 Debug.Log("null" + nodes[i].ID + " " + nodes[i + 1].ID);

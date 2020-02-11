@@ -7,7 +7,6 @@ public class Joint {
     public List<Node> input = new List<Node>();
     public List<Node> output = new List<Node>();
     public Vector3 pos;
-
     public Joint(List<Node> inp, List<Node> outp) {
         input = inp;
         output = outp;
@@ -30,7 +29,6 @@ public class Street : MonoBehaviour {
     public List<Node> nodes = new List<Node>();
     public int ifrom = 2, ito = 2;
     float lastOfset0, lastOfset1;
-    //private PathFinder script;
 
     public void Destroy() {
         Clear();
@@ -46,7 +44,6 @@ public class Street : MonoBehaviour {
 
     public void Init(Junction from, Junction to, int fNum = 1, int tNum = 1) {
         ifrom = fNum; ito = tNum;
-        //script = FindObjectOfType<PathFinder>();
         f = from;
         t = to;
         Vector3 norm = t.transform.position - f.transform.position;
@@ -90,6 +87,7 @@ public class Street : MonoBehaviour {
     Vector3 Perpedic(Junction j) {
         Vector3 perpedic = new Vector3(-(to.z - from.z), 0, to.x - from.x);
         perpedic.Normalize();
+        //Vector2 perpedic = Vector2.Perpendicular(to-from).normalized;
         int index = j.street.IndexOf(this);
         if (index == -1) {
             return perpedic;
