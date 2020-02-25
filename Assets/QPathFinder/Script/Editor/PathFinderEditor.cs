@@ -9,16 +9,17 @@ namespace QPathFinder {
     [CustomEditor(typeof(PathFinder))]
     public class PathFinderEditor : Editor {
         enum SceneMode {
-            AddNode,
-            EditNode,
-            SelectStreet,
+            AddJunction,
+            SelectJunction,
             AddStreet,
-            None
+            SelectStreet,
+            None,
+            DeleteJunction,
+            DeleteStreet
         }
-        Junction last;
+        Junction last, SelectedJunction;
         Street SelectedStreet;
         int ifro = 2, ito = 2;
-        int win = 0;
 
         [MenuItem("GameObject/Create a 2D PathFinder in scene with a collider")]
         public static void Create2DPathFinderObjectInScene() {
@@ -61,16 +62,11 @@ namespace QPathFinder {
 
         #region OnInspectorGUI
 
-        public override void OnInspectorGUI() {
-            showDefaultInspector = EditorGUILayout.Toggle("Show Default inspector", showDefaultInspector);
-            if (showDefaultInspector) {
-                DrawDefaultInspector();
-            } else {
-                CustomGUI.DrawSeparator(Color.gray);
-                //ShowNodesAndPathInInspector();
-            }
-
-        }
+        //public override void OnInspectorGUI() {
+        //    DrawDefaultInspector();
+        //    CustomGUI.DrawSeparator(Color.gray);
+        //    EditorGUILayout.Space();
+        //}
 
         private void ShowNodesAndPathInInspector() {
             script.graphData.nodeSize = EditorGUILayout.Slider("Node gizmo Size", script.graphData.nodeSize, 0.1f, 3f);
@@ -82,7 +78,6 @@ namespace QPathFinder {
             GUILayout.Label("<size=12><b>Nodes</b></size>", CustomGUI.GetStyleWithRichText());
 
             if (script.graphData.nodes.Count > 0) {
-                showNodeIDsInTheScene = EditorGUILayout.Toggle("Show Node IDs in scene", showNodeIDsInTheScene);
 
                 List<Node> nodeList = script.graphData.nodes;
                 for (int j = 0; j < nodeList.Count; j++) {
@@ -104,10 +99,6 @@ namespace QPathFinder {
             EditorGUILayout.Space();
             GUILayout.Label("<size=12><b>Paths</b></size>", CustomGUI.GetStyleWithRichText());
 
-            showPathIDsInTheScene = EditorGUILayout.Toggle("Show Path IDs in scene", showPathIDsInTheScene);
-            drawPathsInTheScene = EditorGUILayout.Toggle("Draw Paths", drawPathsInTheScene);
-            showCostsInTheScene = EditorGUILayout.Toggle("Show Path Costs in scene", showCostsInTheScene);
-
             //for (Path pd = script.graphData.getnext(); pd != null; pd = script.graphData.getnext()) {
             List<Path> paths = script.graphData.Paths;
             foreach (Path pd in paths) {
@@ -117,7 +108,7 @@ namespace QPathFinder {
 
                     EditorGUILayout.LabelField("From", EditorStyles.miniLabel, GUILayout.Width(30f)); pd.IDOfA = EditorGUILayout.IntField(pd.IDOfA, GUILayout.Width(50f));
                     EditorGUILayout.LabelField("To", EditorStyles.miniLabel, GUILayout.Width(25f)); pd.IDOfB = EditorGUILayout.IntField(pd.IDOfB, GUILayout.Width(50f));
-                    EditorGUILayout.LabelField("<Color=" + costGUITextColor + ">" + "Cost" + "</Color>", CustomGUI.GetStyleWithRichText(EditorStyles.miniLabel), GUILayout.Width(30f)); pd.Cost = EditorGUILayout.IntField(pd.Cost, GUILayout.Width(50f));
+                    EditorGUILayout.LabelField("<Color=" + costGUITextColor + ">" + "Cost" + "</Color>", CustomGUI.GetStyleWithRichText(EditorStyles.miniLabel), GUILayout.Width(30f)); pd.Cost = EditorGUILayout.FloatField(pd.Cost, GUILayout.Width(50f));
 
                     EditorGUILayout.LabelField("One Way", EditorStyles.miniLabel, GUILayout.Width(50f)); pd.isOneWay = EditorGUILayout.Toggle(pd.isOneWay);
 
@@ -145,9 +136,9 @@ namespace QPathFinder {
             DrawGUIWindowOnScene();
             UpdateMouseInput();
 
-            //if (sceneMode == SceneMode.AddNode) {
+            //if (sceneMode == SceneMode.AddJunction) {
             //    DrawNodes(Color.green);
-            //} else if (sceneMode == SceneMode.EditNode) {
+            //} else if (sceneMode == SceneMode.SelectJunction) {
             //    DrawNodes(Color.magenta, true);
             //} else if (sceneMode == SceneMode.ConnectPath) {
             //    DrawNodes(Color.green, false, script.graphData.GetNode(selectedNodeForConnectNodesMode), Color.red);
@@ -166,89 +157,134 @@ namespace QPathFinder {
         }
         private void DrawGUIWindowOnScene() {
             GUILayout.Window(1, new Rect(0f, 25f, 70f, 80f),
-                                                            delegate (int windowID) {
-                                                                EditorGUILayout.BeginHorizontal();
-                                                                sceneMode = (SceneMode)GUILayout.SelectionGrid((int)sceneMode, new string[] { "Add Node",
-                                                                    "Move Node", "SelectStreet", "AddStreet", "None" }, 1);
-                                                                if (sceneMode == SceneMode.SelectStreet) {
-                                                                    win = 1;
-                                                                } else if (sceneMode == SceneMode.AddStreet) {
-                                                                    win = 2;
-                                                                } else {
-                                                                    win = 0;
-                                                                    if (SelectedStreet)
-                                                                        SelectedStreet.Select(false);
-                                                                }
-                                                                GUI.color = Color.white;
-                                                                EditorGUILayout.EndHorizontal();
-                                                            }
-                            , "Mode");
+                delegate (int windowID) {
+                    EditorGUILayout.BeginHorizontal();
+                    sceneMode = (SceneMode)GUILayout.SelectionGrid((int)sceneMode, new string[] { "Add Node", "Select Node", "Add Street", "Select Street", "None","Delete Junction","Delete Street" }, 1);
+
+                    if (sceneMode != SceneMode.SelectStreet && SelectedStreet) {
+                        SelectedStreet.Select(false);
+                        SelectedStreet = null;
+                    }
+                    if (sceneMode != SceneMode.SelectJunction && SelectedJunction) {
+                        SelectedJunction.Select(false);
+                        SelectedJunction = null;
+                    }
+
+                    GUI.color = Color.white;
+                    EditorGUILayout.EndHorizontal();
+                }, "Mode");
+
             GUILayout.Window(2, new Rect(0, 155f, 70f, 80f),
-                                                            delegate (int windowID) {
-                                                                EditorGUILayout.BeginVertical();
-                                                                if (GUILayout.Button("Delete Node"))
-                                                                    DeleteNode();
-                                                                //if (GUILayout.Button("Delete Path"))
-                                                                //    DeletePath();
-                                                                if (GUILayout.Button("Clear All")) {
-                                                                    ClearNodes();
-                                                                    ClearPaths();
-                                                                }
-                                                                if (GUILayout.Button("Refresh Data")) {
-                                                                    script.graphData.ReCalculate();
-                                                                }
-                                                                GUI.color = Color.white;
-                                                                EditorGUILayout.EndVertical();
-                                                            }
-                                , "");
-            if (win != 0) {
-                GUI.Window(3, new Rect(100f, 25f, 100f, 80f),
-                                                                delegate (int windowID) {
-                                                                EditorGUILayout.BeginHorizontal();
-                                                                    if (win == 1 && SelectedStreet) {
-                                                                        GUI.Label(new Rect(0, 20, 50, 15), "Route " + SelectedStreet.ifrom);
-                                                                        GUI.Label(new Rect(0, 40, 50, 15), "Route " + SelectedStreet.ito);
-                                                                        if (GUI.Button(new Rect(65, 20, 15, 15), "<")) {
-                                                                            SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom - 1), 0, 10);
-                                                                            SelectedStreet.Recalculate();
-                                                                            script.graphData.ReCalculate();
-                                                                        }
-                                                                        if (GUI.Button(new Rect(80, 20, 15, 15), ">")) {
-                                                                            SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom + 1), 0, 10);
-                                                                            SelectedStreet.Recalculate();
-                                                                            script.graphData.ReCalculate();
-                                                                        }
-                                                                        if (GUI.Button(new Rect(65, 40, 15, 15), "<")) {
-                                                                            SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito - 1), 0, 10);
-                                                                            SelectedStreet.Recalculate();
-                                                                            script.graphData.ReCalculate();
-                                                                        }
-                                                                        if (GUI.Button(new Rect(80, 40, 15, 15), ">")) {
-                                                                            SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito + 1), 0, 10);
-                                                                            SelectedStreet.Recalculate();
-                                                                            script.graphData.ReCalculate();
-                                                                        }
-                                                                    }
-                                                                    if (win == 2) {
-                                                                        GUI.Label(new Rect(0, 20, 50, 15), "Route " + ifro);
-                                                                        GUI.Label(new Rect(0, 40, 50, 15), "Route " + ito);
-                                                                        if (GUI.Button(new Rect(65, 20, 15, 15), "<")) {
-                                                                            ifro = Mathf.Clamp((ifro - 1), 0, 10);
-                                                                        }
-                                                                        if (GUI.Button(new Rect(80, 20, 15, 15), ">")) {
-                                                                            ifro = Mathf.Clamp((ifro + 1), 0, 10);
-                                                                        }
-                                                                        if (GUI.Button(new Rect(65, 40, 15, 15), "<")) {
-                                                                            ito = Mathf.Clamp((ito - 1), 0, 10);
-                                                                        }
-                                                                        if (GUI.Button(new Rect(80, 40, 15, 15), ">")) {
-                                                                            ito = Mathf.Clamp((ito + 1), 0, 10);
-                                                                        }
-                                                                    }
-                                                                    GUI.color = Color.white;
-                                                                    EditorGUILayout.EndHorizontal();
-                                                                }
-                                , "Mode");
+                delegate (int windowID) {
+                    EditorGUILayout.BeginVertical();
+                    if (GUILayout.Button("Delete Node"))
+                        DeleteNode();
+                    //if (GUILayout.Button("Delete Path"))
+                    //    DeletePath();
+                    if (GUILayout.Button("Clear All")) {
+                        ClearNodes();
+                        ClearPaths();
+                    }
+                    if (GUILayout.Button("Refresh Data")) {
+                        script.graphData.ReCalculate();
+                    }
+                    GUI.color = Color.white;
+                    EditorGUILayout.EndVertical();
+                }, "");
+
+            if (sceneMode == SceneMode.SelectStreet && SelectedStreet) {
+                GUI.Window(3, new Rect(100f, 25f, 140f, 160f),
+                delegate (int windowID) {
+                    GUI.color = Color.white;
+                    EditorGUILayout.BeginHorizontal();
+                    GUI.Label(new Rect(0, 20, 70, 15), "Pasy ruchu");
+                    GUI.Label(new Rect(0, 40, 70, 15), "Pasy ruchu");
+                    GUI.Label(new Rect(90, 20, 20, 15), SelectedStreet.ifrom.ToString());
+                    GUI.Label(new Rect(90, 40, 20, 15), SelectedStreet.ito.ToString());
+                    if (GUI.Button(new Rect(105, 20, 15, 15), "<")) {
+                        SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom - 1), 0, 10);
+                        SelectedStreet.Recalculate();
+                        script.graphData.ReCalculate();
+                    }
+                    if (GUI.Button(new Rect(120, 20, 15, 15), ">")) {
+                        SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom + 1), 0, 10);
+                        SelectedStreet.Recalculate();
+                        script.graphData.ReCalculate();
+                    }
+                    if (GUI.Button(new Rect(105, 40, 15, 15), "<")) {
+                        SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito - 1), 0, 10);
+                        SelectedStreet.Recalculate();
+                        script.graphData.ReCalculate();
+                    }
+                    if (GUI.Button(new Rect(120, 40, 15, 15), ">")) {
+                        SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito + 1), 0, 10);
+                        SelectedStreet.Recalculate();
+                        script.graphData.ReCalculate();
+                    }
+                    //przyjezdni przybysz delegat / dom mieszkañcy / sklep miejsca handlowe / praca miejsca pracy / wyje¿d¿aj¹cy emigranci 
+                    string[] Describe = new string[5] { "Przyjezdni", "Mieszkañcy", "Hiejsca handlowe", "Miejsca pracy", "Wyje¿d¿aj¹cy" };
+                    Color[] col = new Color[5] { new Color(0.9f, 0.9f, 0.9f), new Color(0, 1, 0), new Color(0, 0.75f, 1), new Color(1, 1, 0), new Color(1, 0.58f, 0.62f) };
+                    for (int i = 0; i < 5; i++) {
+                        GUI.color = col[i];
+                        GUI.Label(new Rect(0, 60 + i * 20, 120, 15), Describe[i]);
+                        string tmp = GUI.TextField(new Rect(110, 60 + i * 20, 25, 15), SelectedStreet.Spawns[i].ToString(), 25);
+                        tmp = tmp.Length == 0 ? "0" : tmp;
+                        try {
+                            SelectedStreet.Spawns[i] = int.Parse(tmp);
+                        }
+                        catch (FormatException) { }
+                    }
+                    GUI.color = Color.white;
+                    EditorGUILayout.EndHorizontal();
+                }, "Select Street");
+            }
+            if (sceneMode == SceneMode.SelectJunction && SelectedJunction != null) {
+                GUI.Window(5, new Rect(100f, 25f, 140f, 160f),
+                delegate (int windowID) {
+                    GUI.color = Color.white;
+                    EditorGUILayout.BeginHorizontal();
+                    GUI.Label(new Rect(0, 20, 70, 15), "Rondo");
+                    SelectedJunction.Rondo = GUI.Toggle(new Rect(110, 20, 20, 15), SelectedJunction.Rondo, "");
+                    if (SelectedJunction.Rondo == false) {
+                        Color[] col = new Color[4] { Color.red, Color.green, Color.blue, Color.yellow };
+                        GUI.Label(new Rect(0, 60, 120, 15), "Timers");
+                        for (int i = 0; i < SelectedJunction.Timers.Length; i++) {
+                            GUI.color = col[i];
+                            string tmp = GUI.TextField(new Rect(110, 60 + i * 20, 25, 15), SelectedJunction.Timers[i].ToString(), 25);
+                            tmp = tmp.Length == 0 ? "0" : tmp;
+                            try {
+                                SelectedJunction.Timers[i] = float.Parse(tmp);
+                            }
+                            catch (FormatException) { }
+                        }
+                    }
+                    GUI.color = Color.white;
+                    EditorGUILayout.EndHorizontal();
+                }, "Select Junction");
+            }
+
+            if (sceneMode == SceneMode.AddStreet) {
+                GUI.Window(4, new Rect(100f, 25f, 140f, 60f), delegate (int windowID) {
+                    EditorGUILayout.BeginHorizontal();
+                    GUI.color = Color.white;
+                    GUI.Label(new Rect(0, 20, 70, 15), "Pasy ruchu");
+                    GUI.Label(new Rect(0, 40, 70, 15), "Pasy ruchu");
+                    GUI.Label(new Rect(90, 20, 20, 15), ifro.ToString());
+                    GUI.Label(new Rect(90, 40, 20, 15), ito.ToString());
+                    if (GUI.Button(new Rect(105, 20, 15, 15), "<")) {
+                        ifro = Mathf.Clamp((ifro - 1), 0, 10);
+                    }
+                    if (GUI.Button(new Rect(120, 20, 15, 15), ">")) {
+                        ifro = Mathf.Clamp((ifro + 1), 0, 10);
+                    }
+                    if (GUI.Button(new Rect(105, 40, 15, 15), "<")) {
+                        ito = Mathf.Clamp((ito - 1), 0, 10);
+                    }
+                    if (GUI.Button(new Rect(120, 40, 15, 15), ">")) {
+                        ito = Mathf.Clamp((ito + 1), 0, 10);
+                    }
+                    EditorGUILayout.EndHorizontal();
+                }, "Add Street");
             }
         }
 
@@ -272,13 +308,13 @@ namespace QPathFinder {
         }
 
         private void DrawPathLine() {
-            //List<Path> paths = script.graphData.Paths;
-            Vector3 currNode;
-            Vector2 guiPosition;
-
             if (script.graphData.nodes == null)
                 return;
 
+            ColoredTexture Colors = new ColoredTexture();
+            //List<Path> paths = script.graphData.Paths;
+            Vector3 currNode;
+            Vector2 guiPosition;
 
             //for (Path pd = script.graphData.getnext(); pd != null; pd = script.graphData.getnext()) {
             foreach (Path pd in script.graphData.Paths) {
@@ -293,24 +329,70 @@ namespace QPathFinder {
                         Handles.color = script.graphData.lineColor;
                         break;
                 }
-                if (drawPathsInTheScene)
+                if (script.drawPaths && sceneMode != SceneMode.SelectJunction)
                     Handles.DrawLine(pd.a.Position, pd.b.Position);
 
                 Handles.BeginGUI();
-                {
-                    currNode = (pd.a.Position + pd.b.Position) / 2;
-                    guiPosition = HandleUtility.WorldToGUIPoint(currNode);
-                    string str = "";
-                    if (showPathIDsInTheScene)
-                        str += "<Color=" + pathGUITextColor + ">" + pd.autoGeneratedID.ToString() + "</Color>";
-                    if (showCostsInTheScene) {
-                        if (!string.IsNullOrEmpty(str))
-                            str += "<Color=" + "#ffffff" + ">" + "  Cost: " + "</Color>";
-                        str += "<Color=" + costGUITextColor + ">" + pd.Cost.ToString() + "</Color>";
-                    }
-
+                currNode = (pd.a.Position + pd.b.Position) / 2;
+                guiPosition = HandleUtility.WorldToGUIPoint(currNode);
+                string str = "";
+                if (script.showPathId)
+                    str += "<Color=" + pathGUITextColor + ">" + pd.autoGeneratedID.ToString() + "</Color>";
+                if (script.showCosts) {
                     if (!string.IsNullOrEmpty(str))
-                        GUI.Label(new Rect(guiPosition.x - 10, guiPosition.y - 30, 40, 20), str, CustomGUI.GetStyleWithRichText());
+                        str += "<Color=" + "#ffffff" + ">" + "  Cost: " + "</Color>";
+                    str += "<Color=" + costGUITextColor + ">" + pd.Cost.ToString() + "</Color>";
+                }
+
+                if (!string.IsNullOrEmpty(str))
+                    GUI.Label(new Rect(guiPosition.x - 10, guiPosition.y - 30, 40, 20), str, CustomGUI.GetStyleWithRichText());
+
+                Handles.EndGUI();
+            }
+            if (script.showSpawns) {
+                Handles.BeginGUI();
+                foreach (Street s in script.graphData.AllStreets) {
+                    guiPosition = HandleUtility.WorldToGUIPoint(s.center.Position);
+                    int i = 0;
+                    for (int j = 0; j < 5; j++) {
+                        if (s.Spawns[j] > 0) {
+                            GUI.Label(new Rect(guiPosition.x + i * 15, guiPosition.y, 20, 20), Colors.colo[j]);//przyjazd/dom/sklep/praca/wyjazd
+                            GUI.Box(new Rect(guiPosition.x + i * 15, guiPosition.y - 2, 20, 20), s.Spawns[j].ToString(), CustomGUI.GetStyleWithRichText());
+                            i++;
+                        }
+                    }
+                }
+                Handles.EndGUI();
+            }
+            if (script.showNodeId) {
+                Handles.BeginGUI();
+                foreach (Node n in script.graphData.nodes) {
+                    guiPosition = HandleUtility.WorldToGUIPoint(n.Position);
+                    GUI.Label(new Rect(guiPosition.x - 10, guiPosition.y - 30, 20, 20), "<Color=" + nodeGUITextColor + ">" + n.ID.ToString() + "</Color>", CustomGUI.GetStyleWithRichText());
+                }
+                Handles.EndGUI();
+            }
+
+
+            if (sceneMode == SceneMode.SelectJunction && SelectedJunction != null && SelectedJunction.Rondo == false) {
+                Color[] colors = new Color[4] { Color.red, Color.green, Color.blue, Color.yellow };
+                for (int i = 0; i < SelectedJunction.phases.Length; i++) {
+                    Handles.color = colors[i];
+                    Vector3 v = new Vector3(0, i * 0.1f, 0);
+                    foreach (int j in SelectedJunction.phases[i].Routes) {
+                        Handles.DrawLine(SelectedJunction.paths[j].a.Position + v, SelectedJunction.paths[j].b.Position + v);
+                    }
+                }
+            }
+
+
+            if (script.showSpawns) {
+                Handles.BeginGUI();
+                foreach (Junction j in script.graphData.AllJunctions) {
+                    if (j.phases != null && j.phases.Length > 0 && j.Rondo == false) {
+                        guiPosition = HandleUtility.WorldToGUIPoint(j.transform.position);
+                        GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + junctionGUITextColor + ">" + j.TimeToPhase.ToString("0.0") + "</Color>", CustomGUI.GetStyleWithRichText());
+                    }
                 }
                 Handles.EndGUI();
             }
@@ -318,7 +400,7 @@ namespace QPathFinder {
         }
 
         private void DrawGUIDisplayForNodes() {
-            if (!showNodeIDsInTheScene)
+            if (!script.showNodeId)
                 return;
 
             Node currNode;
@@ -353,17 +435,31 @@ namespace QPathFinder {
             Ray ray = HandleUtility.GUIPointToWorldRay(mousePos);
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit, 100000f, backgroundLayerMask)) {
-                if (sceneMode == SceneMode.AddNode) {
-
+                if (sceneMode == SceneMode.AddJunction) {
                     Vector3 hitPos = hit.point;
                     hitPos += (-ray.direction.normalized) * script.graphData.heightFromTheGround;
-                    //AddNode(hitPos);
                     CreateJunction(hitPos);
+                }
+                if (sceneMode == SceneMode.SelectJunction) {
+                    if (hit.transform.name == "Junction(Clone)") {
+                        if (SelectedJunction) {
+                            SelectedJunction.Select(false);
+                            SelectedJunction = null;
+                        }
+                        SelectedJunction = hit.transform.GetComponent<Junction>();
+                        SelectedJunction.Select();
+                    }
+                } else {
+                    if (SelectedJunction) {
+                        SelectedJunction.Select(false);
+                        SelectedJunction = null;
+                    }
                 }
                 if (sceneMode == SceneMode.SelectStreet) {
                     if (hit.transform.parent.name == "Street") {
                         if (SelectedStreet) {
                             SelectedStreet.Select(false);
+                            SelectedStreet = null;
                         }
                         SelectedStreet = hit.transform.parent.GetComponent<Street>();
                         SelectedStreet.Select();
@@ -372,6 +468,7 @@ namespace QPathFinder {
                 } else {
                     if (SelectedStreet) {
                         SelectedStreet.Select(false);
+                        SelectedStreet = null;
                     }
                 }
                 if (sceneMode == SceneMode.AddStreet) {
@@ -379,7 +476,7 @@ namespace QPathFinder {
                         last = hit.transform.gameObject.GetComponent<Junction>();
                     } else {
                         Junction b = hit.transform.gameObject.GetComponent<Junction>();
-                        if (b != null) {
+                        if (b != null && last != b) {
                             CreateStreet(last, b);
                             last = null;
                         }
@@ -398,9 +495,10 @@ namespace QPathFinder {
             go.transform.parent = script.transform;
             Street st = go.AddComponent<Street>();
             st.Init(a, b, ifro, ito);
+            script.graphData.AllStreets.Add(st);
+            script.graphData.ReCalculate();
             a.AddStreet(st);
             b.AddStreet(st, 1);
-            script.graphData.AllStreets.Add(st);
             script.graphData.ReCalculate();
         }
 
@@ -435,6 +533,7 @@ namespace QPathFinder {
 
             Logger.LogInfo("Node with ID:" + nodeRemoved.ID + " Removed!");
         }
+
         void DeleteNode(Node Index) {
             List<Node> nodeList = script.graphData.nodes;
             if (nodeList == null || nodeList.Count == 0)
@@ -446,10 +545,7 @@ namespace QPathFinder {
 
         void ClearNodes() {
             script.graphData.nodes.Clear();
-            Logger.LogWarning("All Nodes are cleared!");
-            script.graphData.Spawn.Clear();
-            script.graphData.Target.Clear();
-
+            script.graphData.center.Clear();
         }
         void ClearPaths() {
             foreach (Street s in script.graphData.AllStreets) {
@@ -460,9 +556,8 @@ namespace QPathFinder {
             }
             script.graphData.AllStreets.Clear();
             script.graphData.AllJunctions.Clear();
-            script.graphData.nodesSorted.Clear();
-            script.graphData.pathsSorted.Clear();
-
+            //script.graphData.nodesSorted.Clear();
+            //script.graphData.pathsSorted.Clear();
         }
 
         #endregion
@@ -473,15 +568,30 @@ namespace QPathFinder {
             sceneMode = SceneMode.None;
             script = FindObjectOfType<PathFinder>();
             script.graphData.ReGenerateIDs();
+            //Debug.Log("OnEnable: registering playModeStateChanged");
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+        }
+        private void OnDisable() {
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        }
+        void OnPlayModeStateChanged(PlayModeStateChange state) {
+            if (state == PlayModeStateChange.EnteredEditMode) {
+                script.graphData.loadTimers();
+            }
+            if (state == PlayModeStateChange.ExitingPlayMode) {
+                script.graphData.saveTimers();
+            }
+
         }
 
         // When anything in inspector is changed, this will mark the scene or the prefab dirty
-        private void MarkThisDirty() {
+        void MarkThisDirty() {
             if (Application.isPlaying)
                 return;
 
             if (PrefabUtility.GetCorrespondingObjectFromSource(script.gameObject) != null) {
-                //Logger.LogInfo ( "Prefab for PathFinder found! Marked it Dirty ( Modified )");
+                Logger.LogInfo("Prefab for PathFinder found! Marked it Dirty ( Modified )");
                 EditorUtility.SetDirty(script);
             } else {
                 //Logger.LogInfo ( "Prefab for PathFinder Not found! Marked the scene as Dirty ( Modified )");
@@ -497,13 +607,9 @@ namespace QPathFinder {
         const string nodeGUITextColor = "#ff00ffff";
         const string pathGUITextColor = "#00ffffff";
         const string costGUITextColor = "#0000ffff";
+        const string junctionGUITextColor = "#00ff00ff";
 
         //private int selectedNodeForConnectNodesMode = -1;
-        private bool showNodeIDsInTheScene = true;
-        private bool showPathIDsInTheScene = true;
-        private bool drawPathsInTheScene = true;
-        private bool showCostsInTheScene = false;
-        private bool showDefaultInspector = true;
 
         #endregion
     }

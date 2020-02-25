@@ -9,6 +9,9 @@ public class PathFollower : MonoBehaviour {
     public float moveSpeed = 10f;
     public float rotateSpeed = 10f;
     public float velocity = 0;
+    public List<Path> ReturningPath;
+    public float ReturningDelay;
+    public int ReturningType=-1;
 
     protected int _currentIndex;
     Coroutine rou;
@@ -37,9 +40,8 @@ public class PathFollower : MonoBehaviour {
         int QueuePos;
         int index = 0;
         int end = path.Count;
-        float dist, dist1, tar = 0, tmp = 0;
+        float dist, dist1, tar = 0, colo = 0;
         bool endpoint = false;
-        //Rigidbody rb = GetComponent<Rigidbody>();
         transform.position = path[0].a.Position;
         Vector3 dir = path[0].a.Position - path[0].b.Position;
         dir.Normalize();
@@ -89,7 +91,7 @@ public class PathFollower : MonoBehaviour {
             }
 
 
-            velocity = Mathf.SmoothDamp(velocity, tar, ref tmp, 0.3f);
+            velocity = Mathf.SmoothDamp(velocity, tar, ref colo, 0.3f);
 
             //centerpoint reached, index++, endpoint false
             if (endpoint && dist1 < padding) {
@@ -129,7 +131,16 @@ public class PathFollower : MonoBehaviour {
             yield return null;
         }
         path[index].LeaveQueue();
-        Destroy(gameObject);
+        if (ReturningType == -1) {
+            Destroy(gameObject);
+        } else {
+            yield return new WaitForSeconds(ReturningDelay);
+            if (ReturningPath[0].street) {
+                ReturningPath[0].street.Spawns[ReturningType]--;
+            }
+            ReturningType = -1;
+            rou = StartCoroutine(FollowRoutine(ReturningPath));
+        }
     }
 
     public void StopFollowing() { StopAllCoroutines(); }

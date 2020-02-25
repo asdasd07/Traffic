@@ -12,6 +12,8 @@ public class Joint {
         output = outp;
         if (inp.Count == 0) {
             pos = outp[0].Position;
+        } else if (outp.Count == 0) {
+            pos = Vector3.zero;
         } else {
             pos = inp[0].Position;
         }
@@ -23,11 +25,13 @@ public class Street : MonoBehaviour {
     [HideInInspector]
     public Junction f, t;
     public Vector3 from, to;
-    public Node spawn, target;
+    public Node center;
     public Joint[] joints = new Joint[2];
     public List<Path> paths = new List<Path>();
     public List<Node> nodes = new List<Node>();
     public int ifrom = 2, ito = 2;
+    [HideInInspector]
+    public int[] Spawns = new int[5] { 0, 5, 5, 5, 0 };//przyjazd/dom/sklep/praca/wyjazd
     float lastOfset0, lastOfset1;
 
     public void Destroy() {
@@ -53,10 +57,8 @@ public class Street : MonoBehaviour {
         this.from = f.transform.position + norm * lastOfset0;
         this.to = t.transform.position - norm * lastOfset1;
         Vector3 center = (this.to + this.from) / 2;
-        spawn = new Node(center);
-        target = new Node(center);
-        nodes.Add(spawn);
-        nodes.Add(target);
+        this.center = new Node(center);
+        nodes.Add(this.center);
         Calculate();
     }
     public void Resize() {
@@ -96,7 +98,7 @@ public class Street : MonoBehaviour {
         prev = prev < 0 ? 0 : prev;
         int next = index < j.street.Count - 1 ? index + 1 : 0;
         next = next == prev ? index : next;
-        if (prev != next) {
+        if (j.street.Count > 1) {
             Vector3 a = j.street[prev].to - j.street[prev].from;
             a.Normalize();
             Vector3 b = j.street[next].to - j.street[next].from;
@@ -113,11 +115,15 @@ public class Street : MonoBehaviour {
             }
             Vector3 v = a - b;
             v.Normalize();
+            float scale = 1f;
+            if (j.street.Count == 2) {
+                scale = (1f - Vector3.Angle(a, b) / 180f)*3f;
+            }
             //perpedic = new Vector3(Mathf.Abs(v.x) < Mathf.Abs(perpedic.x) ? perpedic.x : v.x, 0, Mathf.Abs(v.z) < Mathf.Abs(perpedic.z) ? perpedic.z : v.z);
             //perpedic = v * (Mathf.Abs( Vector3.Cross(v, perpedic).y) + 1);
             //perpedic = Vector3.Project(perpedic, v);
             //perpedic = new Vector3(v.x / v.z * perpedic.z, 0, v.z / v.x * perpedic.x);
-            perpedic = v;
+            perpedic = scale * v;
         }
         if (index == next && index != 0) {
             perpedic = -perpedic;
@@ -154,10 +160,10 @@ public class Street : MonoBehaviour {
             nodes.Add(n2);
             nodes.Add(n3);
             Path[] p = new Path[4];
-            p[0] = new Path(n1, n2, transform);
-            p[1] = new Path(n2, n3, transform);
-            p[2] = new Path(spawn, n2, transform, true);
-            p[3] = new Path(n2, target, transform, true);
+            p[0] = new Path(n1, n2, transform, false, 2, this);
+            p[1] = new Path(n2, n3, transform, false, 2, this);
+            p[2] = new Path(center, n2, transform, true, 2, this);
+            p[3] = new Path(n2, center, transform, true, 2, this);
             paths.AddRange(p);
         }
         for (int i = 0; i < ito; i++) {
@@ -170,10 +176,10 @@ public class Street : MonoBehaviour {
             nodes.Add(n2);
             nodes.Add(n3);
             Path[] p = new Path[4];
-            p[0] = new Path(n1, n2, transform);
-            p[1] = new Path(n2, n3, transform);
-            p[2] = new Path(spawn, n2, transform, true);
-            p[3] = new Path(n2, target, transform, true);
+            p[0] = new Path(n1, n2, transform, false, 2, this);
+            p[1] = new Path(n2, n3, transform, false, 2, this);
+            p[2] = new Path(center, n2, transform, true, 2, this);
+            p[3] = new Path(n2, center, transform, true, 2, this);
             paths.AddRange(p);
         }
         joints[0] = new Joint(nod4, nod1);

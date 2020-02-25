@@ -16,22 +16,99 @@ public class PathFinder : MonoBehaviour {
     private static PathFinder _instance;
     public static PathFinder instance { get { return _instance; } }
     List<Transform> Cars = new List<Transform>();
-    float timer1 = 0, timer2 = 0;
     Transform CarsBox;
     public int amount = 10;
     public int maxCars = 100;
     public float CarsFreq = 0.1f;
+    public float WorkDelay = 5f, ShopingDelay = 1f;
+    public bool RandomSpawn = false;
+    public bool showNodeId = true;
+    public bool showPathId = true;
+    public bool drawPaths = true;
+    public bool showCosts = false;
+    public bool showSpawns = true;
     [HideInInspector]
     public GraphData graphData = new GraphData();
-
     public void Awake() {
         _instance = this;
+
         StartCoroutine(Spawn());
+        StartCoroutine(RemoveCars());
     }
     public void OnDestroy() {
         _instance = null;
     }
+    List<int>[] MakeSpawnList() {
+        List<int>[] Spaw = new List<int>[5];//przyjazd/dom/sklep/praca/wyjazd
+        for (int j = 0; j < 5; j++) {
+            Spaw[j] = new List<int>();
+        }
+        foreach (Street s in graphData.AllStreets) {
+            for (int j = 0; j < 5; j++) {
+                for (int i = 0; i < s.Spawns[j]; i++) {
+                    if (s.center.ID != -1)
+                        Spaw[j].Add(s.center.ID);
+                }
+            }
+        }
+        return Spaw;
+    }
+    public void SpawnPredictably(List<int>[] Spaw) {
+        if (Spaw[0].Count == 0 && Spaw[1].Count == 0 || Spaw[2].Count == 0 && Spaw[3].Count == 0 && Spaw[4].Count == 0) {
+            return;
+        }
+        List<Node> nod = null, retnod = null;
+        int sp = -1, tar = -1, rsp = -1, rtar = -1;
+        while (nod == null || nod.Count == 0) {
+            sp = Random.Range(0, 2);
+            sp = Spaw[sp].Count == 0 ? 1 - sp : sp;
+            tar = Random.Range(0, 3);
+            if (Spaw[tar + 2].Count == 0) {
+                tar = (tar + 1) % 3;
+                if (Spaw[tar + 2].Count == 0) {
+                    tar = (tar + 1) % 3;
+                }
+            }
+            tar += 2;
+            rsp = Random.Range(0, Spaw[sp].Count);
+            int a = Spaw[sp][rsp];
+            int b = a;
+            while (b == a) {
+                rtar = Random.Range(0, Spaw[tar].Count);
+                b = Spaw[tar][rtar];
+            }
+            nod = FindShortedPathSynchronousInternal(a, b);
+            if (tar == 2 || tar == 3) {
+                retnod = FindShortedPathSynchronousInternal(b, a);
+            }
+        }
+        Spaw[sp].RemoveAt(rsp);
+        Spaw[tar].RemoveAt(rtar);
+        List<Path> pat = NodesToPath(nod);
+        PathFollower fol = SpawnCar();
+        if (retnod != null && retnod.Count != 0) {
+            List<Path> retpat = NodesToPath(retnod);
+            fol.ReturningPath = retpat;
+            fol.ReturningType = tar;
+            if (tar == 2) {
+                fol.ReturningDelay = ShopingDelay;
+            }
+            if (tar == 3) {
+                fol.ReturningDelay = WorkDelay;
+            }
+        }
+        if (pat[0].street) {
+            pat[0].street.Spawns[sp]--;
+        }
+        fol.Follow(pat);
+    }
     public void SpawnRandom() {
+        PathFollower fol = SpawnCar();
+        List<Path> paths = RandomPath();
+        fol.Follow(paths);
+    }
+
+    PathFollower SpawnCar() {
         if (!CarsBox) {
             CarsBox = (new GameObject("Cars")).transform;
         }
@@ -40,42 +117,44 @@ public class PathFinder : MonoBehaviour {
         go.transform.parent = CarsBox;
         Cars.Add(go.transform);
         var fol = go.AddComponent<PathFollower>();
-        List<Path> paths = RandomPath();
-        fol.Follow(paths);
+        return fol;
     }
     public List<Path> RandomPath() {
         List<Node> nod = null;
         while (nod == null || nod.Count == 0) {
-            int a = Random.Range(0, graphData.Spawn.Count);
+            int a = Random.Range(0, graphData.center.Count);
             int b = a;
             while (b == a) {
-                b = Random.Range(0, graphData.Target.Count);
+                b = Random.Range(0, graphData.center.Count);
             }
-            Node spa = graphData.Spawn[a];
-            Node tar = graphData.Target[b];
+            Node spa = graphData.center[a];
+            Node tar = graphData.center[b];
             nod = FindShortedPathSynchronousInternal(spa.ID, tar.ID);
         }
         List<Path> pat = NodesToPath(nod);
         return pat;
     }
     protected IEnumerator Spawn() {
-
+        List<int>[] Spn = MakeSpawnList();
         while (true) {
             if (graphData.spawn) {
-                if (timer2 <= 0) {
-                    timer2 = 2f;
-                    Cars.RemoveAll(item => item == null);
-                    amount = Cars.Count;
-                }
-                if (timer1 <= 0 && maxCars > amount) {
-                    timer1 = CarsFreq;
-                    SpawnRandom();
+                if (maxCars > amount) {
+                    if (RandomSpawn) {
+                        SpawnRandom();
+                    } else {
+                        SpawnPredictably(Spn);
+                    }
                     amount++;
                 }
-                timer1 -= Time.deltaTime;
-                timer2 -= Time.deltaTime;
             }
-            yield return null;
+            yield return new WaitForSeconds(CarsFreq);
+        }
+    }
+    IEnumerator RemoveCars() {
+        while (true) {
+            Cars.RemoveAll(item => item == null);
+            amount = Cars.Count;
+            yield return new WaitForSeconds(2);
         }
     }
     void Update() {
