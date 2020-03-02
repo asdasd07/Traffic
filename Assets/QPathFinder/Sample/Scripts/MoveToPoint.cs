@@ -25,11 +25,6 @@ using UnityEngine;
             Logger.SetLoggingLevel( debugLogLevel );
             Logger.SetDebugDrawLineDuration ( debugDrawLineDuration );
         }
-        void Update () 
-        {
-            
-
-        }
 
         void OnGUI()
         {

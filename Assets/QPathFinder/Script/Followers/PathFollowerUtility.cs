@@ -348,7 +348,7 @@ public static class PathFollowerUtility {
         return pt;
     }
     private static Vector3 GetClosestPointOnAnyPath(int nodeID, PathFinder manager, Vector3 pos, out int pathID) {
-        Node node = manager.graphData.GetNode(nodeID);
+        Node node = manager.graphData.nodes[nodeID];
         Vector3 vClosestPoint = node.Position;
         float fClosestDist = (pos - node.Position).sqrMagnitude;
 
@@ -356,9 +356,9 @@ public static class PathFollowerUtility {
         pathID = -1;
 
         //for (Path pd = manager.graphData.getnext(); pd != null; pd = manager.graphData.getnext()) {
-        foreach (Path pd in manager.graphData.Paths) {
+        foreach (Path pd in manager.graphData.paths) {
             if (pd.IDOfA == node.ID || pd.IDOfB == node.ID) {
-                Vector3 vPos = ComputeClosestPointFromPointToLine(pos, manager.graphData.GetNode(pd.IDOfA).Position, manager.graphData.GetNode(pd.IDOfB).Position, out isOnExtremities);
+                Vector3 vPos = ComputeClosestPointFromPointToLine(pos, manager.graphData.nodes[pd.IDOfA].Position, manager.graphData.nodes[pd.IDOfB].Position, out isOnExtremities);
                 float fDist = (vPos - pos).sqrMagnitude;
 
                 if (fDist < fClosestDist) {

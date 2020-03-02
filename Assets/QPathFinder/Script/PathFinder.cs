@@ -21,10 +21,12 @@ public class PathFinder : MonoBehaviour {
     public int maxCars = 100;
     public float CarsFreq = 0.1f;
     public float WorkDelay = 5f, ShopingDelay = 1f;
-    public bool RandomSpawn = false;
+    public bool spawn = true;
+    public bool randomSpawn = false;
+    public bool saveTimers = true;
+    public bool drawPaths = true;
     public bool showNodeId = true;
     public bool showPathId = true;
-    public bool drawPaths = true;
     public bool showCosts = false;
     public bool showSpawns = true;
     [HideInInspector]
@@ -62,23 +64,31 @@ public class PathFinder : MonoBehaviour {
         while (nod == null || nod.Count == 0) {
             sp = Random.Range(0, 2);
             sp = Spaw[sp].Count == 0 ? 1 - sp : sp;
-            tar = Random.Range(0, 3);
-            if (Spaw[tar + 2].Count == 0) {
-                tar = (tar + 1) % 3;
+            if (sp == 0) {//incoming
+                tar = Random.Range(0, 2);
+                tar = tar == 0 ? 1 : 4;
+                tar = Spaw[tar].Count == 0 ? tar == 1 ? 5 : 1 : tar;
+                if (Spaw[tar].Count == 0) break;
+            } else {//house
+                tar = Random.Range(0, 3);
                 if (Spaw[tar + 2].Count == 0) {
                     tar = (tar + 1) % 3;
+                    if (Spaw[tar + 2].Count == 0) {
+                        tar = (tar + 1) % 3;
+                    }
                 }
+                tar += 2;
             }
-            tar += 2;
-            rsp = Random.Range(0, Spaw[sp].Count);
+            rsp = Random.Range(0, Spaw[sp].Count);//spawn of type sp
             int a = Spaw[sp][rsp];
             int b = a;
+            if (!Spaw[tar].Exists(item => item != a)) break;
             while (b == a) {
-                rtar = Random.Range(0, Spaw[tar].Count);
+                rtar = Random.Range(0, Spaw[tar].Count);//target of type tar
                 b = Spaw[tar][rtar];
             }
             nod = FindShortedPathSynchronousInternal(a, b);
-            if (tar == 2 || tar == 3) {
+            if (sp == 1 && (tar == 2 || tar == 3)) {//house to work or shop come back
                 retnod = FindShortedPathSynchronousInternal(b, a);
             }
         }
@@ -122,13 +132,13 @@ public class PathFinder : MonoBehaviour {
     public List<Path> RandomPath() {
         List<Node> nod = null;
         while (nod == null || nod.Count == 0) {
-            int a = Random.Range(0, graphData.center.Count);
+            int a = Random.Range(0, graphData.centers.Count);
             int b = a;
             while (b == a) {
-                b = Random.Range(0, graphData.center.Count);
+                b = Random.Range(0, graphData.centers.Count);
             }
-            Node spa = graphData.center[a];
-            Node tar = graphData.center[b];
+            Node spa = graphData.centers[a];
+            Node tar = graphData.centers[b];
             nod = FindShortedPathSynchronousInternal(spa.ID, tar.ID);
         }
         List<Path> pat = NodesToPath(nod);
@@ -137,9 +147,9 @@ public class PathFinder : MonoBehaviour {
     protected IEnumerator Spawn() {
         List<int>[] Spn = MakeSpawnList();
         while (true) {
-            if (graphData.spawn) {
+            if (spawn) {
                 if (maxCars > amount) {
-                    if (RandomSpawn) {
+                    if (randomSpawn) {
                         SpawnRandom();
                     } else {
                         SpawnPredictably(Spn);
@@ -162,12 +172,8 @@ public class PathFinder : MonoBehaviour {
     List<Path> NodesToPath(List<Node> nodes) {
         List<Path> paths = new List<Path>();
         for (int i = 0; i < nodes.Count - 1; i++) {
-            Path p = graphData.FindPath(nodes[i].ID, nodes[i + 1].ID);
+            Path p = graphData.GetPathBetween(nodes[i].ID, nodes[i + 1].ID);
             if (p == null) { return null; }
-            //Path p = graphData.pathsSorted. .AllStreets.Paths.Find (item => item.a.ID == nodes[i].ID && item.b.ID == nodes[i + 1].ID);
-            if (p == null) {
-                Debug.Log("null" + nodes[i].ID + " " + nodes[i + 1].ID);
-            }
             paths.Add(p);
         }
         return paths;
@@ -222,8 +228,8 @@ public class PathFinder : MonoBehaviour {
 
         graphData.ReGenerateIDs();
 
-        Node startPoint = graphData.nodesSorted[startPointID];
-        Node endPoint = graphData.nodesSorted[endPointID];
+        Node startPoint = graphData.nodes[startPointID];
+        Node endPoint = graphData.nodes[endPointID];
 
         foreach (var point in graphData.nodes) {
             point.heuristicDistance = -1;
@@ -277,7 +283,7 @@ public class PathFinder : MonoBehaviour {
             }
 
             //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
-            foreach (var path in graphData.Paths) {
+            foreach (var path in graphData.paths) {
                 if (path.IDOfA == leastCostPoint.ID
                 || path.IDOfB == leastCostPoint.ID) {
                     if (path.isOneWay) {
@@ -286,7 +292,7 @@ public class PathFinder : MonoBehaviour {
                     }
 
                     Node otherPoint = path.IDOfA == leastCostPoint.ID ?
-                                            graphData.nodesSorted[path.IDOfB] : graphData.nodesSorted[path.IDOfA];
+                                            graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
 
                     if (otherPoint.heuristicDistance <= 0)
                         otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
@@ -376,7 +382,7 @@ public class PathFinder : MonoBehaviour {
             }
 
             //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
-            foreach (var path in graphData.Paths) {
+            foreach (var path in graphData.paths) {
                 if (path.a == leastCostPoint
                 || path.b == leastCostPoint) {
                     if (path.isOneWay) {
@@ -454,7 +460,7 @@ public class PathFinder : MonoBehaviour {
             }
 
             //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
-            foreach (var path in graphData.Paths) {
+            foreach (var path in graphData.paths) {
                 if (path.a == leastCostPoint
                 || path.b == leastCostPoint) {
 
@@ -501,8 +507,8 @@ public class PathFinder : MonoBehaviour {
 
         graphData.ReGenerateIDs();
 
-        Node startPoint = graphData.nodesSorted[startPointID];
-        Node endPoint = graphData.nodesSorted[endPointID];
+        Node startPoint = graphData.nodes[startPointID];
+        Node endPoint = graphData.nodes[endPointID];
 
         foreach (var point in graphData.nodes) {
             point.heuristicDistance = -1;
@@ -556,7 +562,7 @@ public class PathFinder : MonoBehaviour {
             }
 
             //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
-            foreach (var path in graphData.Paths) {
+            foreach (var path in graphData.paths) {
                 if (path.IDOfA == leastCostPoint.ID
                 || path.IDOfB == leastCostPoint.ID) {
 
@@ -566,7 +572,7 @@ public class PathFinder : MonoBehaviour {
                     }
 
                     Node otherPoint = path.IDOfA == leastCostPoint.ID ?
-                                            graphData.nodesSorted[path.IDOfB] : graphData.nodesSorted[path.IDOfA];
+                                            graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
 
                     if (otherPoint.heuristicDistance <= 0)
                         otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);

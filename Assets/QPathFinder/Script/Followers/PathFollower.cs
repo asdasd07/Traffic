@@ -12,9 +12,14 @@ public class PathFollower : MonoBehaviour {
     public List<Path> ReturningPath;
     public float ReturningDelay;
     public int ReturningType=-1;
+    MeshRenderer mesh;
 
     protected int _currentIndex;
     Coroutine rou;
+    private void Awake() {
+        mesh = GetComponent<MeshRenderer>();
+        mesh.enabled = false;
+    }
 
     public void Follow(List<Vector3> pointsToFollow, float moveSpeed) {
         this.pointsToFollow = pointsToFollow;
@@ -48,6 +53,7 @@ public class PathFollower : MonoBehaviour {
         while (path[index + 1].CanEnter(2) == false) {
             yield return null;
         }
+        mesh.enabled = true;
         index++;
         Vector3 target;
         float back;
@@ -134,7 +140,9 @@ public class PathFollower : MonoBehaviour {
         if (ReturningType == -1) {
             Destroy(gameObject);
         } else {
+            mesh.enabled = false;
             yield return new WaitForSeconds(ReturningDelay);
+            mesh.enabled = true;
             if (ReturningPath[0].street) {
                 ReturningPath[0].street.Spawns[ReturningType]--;
             }
