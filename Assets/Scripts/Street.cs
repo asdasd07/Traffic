@@ -6,17 +6,20 @@ using UnityEngine;
 public class Joint {
     public List<Node> input = new List<Node>();
     public List<Node> output = new List<Node>();
-    public Vector3 pos;
+    public Vector3 Pos {
+        get {
+            if (input.Count != 0) {
+                return input[0].Position;
+            } else if (output.Count != 0) {
+                return output[0].Position;
+            } else {
+                return Vector3.zero;
+            }
+        }
+    }
     public Joint(List<Node> inp, List<Node> outp) {
         input = inp;
         output = outp;
-        if (inp.Count == 0) {
-            pos = outp[0].Position;
-        } else if (outp.Count == 0) {
-            pos = Vector3.zero;
-        } else {
-            pos = inp[0].Position;
-        }
     }
 }
 
@@ -26,13 +29,13 @@ public class Street : MonoBehaviour {
     public Junction f, t;
     public Vector3 from, to;
     public Node center;
-    public string name = "";
+    public string Name = "";
     public Joint[] joints = new Joint[2];
     public List<Path> paths = new List<Path>();
     public List<Node> nodes = new List<Node>();
     public int ifrom = 2, ito = 2;
     [HideInInspector]
-    public int[] Spawns = new int[5] { 0, 5, 5, 5, 0 };//przyjazd/dom/sklep/praca/wyjazd
+    public int[] Spawns = new int[5] { 0, 0, 0, 0, 0 };//przyjazd/dom/sklep/praca/wyjazd
 
     public void Destroy(Junction spare = null) {
         if (f != spare) {
@@ -133,7 +136,6 @@ public class Street : MonoBehaviour {
         return perpedic;
     }
     public void Recalculate() {
-        Calculate();
         f.Calculate();
         t.Calculate();
     }

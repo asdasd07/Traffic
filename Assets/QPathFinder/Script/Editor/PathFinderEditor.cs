@@ -111,6 +111,10 @@ namespace QPathFinder {
                             s.Recalculate();
                         }
                         script.graphData.ReGenerateIDs();
+                        foreach (Junction j in script.graphData.AllJunctions) {
+                            j.Calculate();
+                        }
+                        script.graphData.ReGenerateIDs();
                     }
                     GUI.color = Color.white;
                     EditorGUILayout.EndVertical();
@@ -144,9 +148,10 @@ namespace QPathFinder {
                 delegate (int windowID) {
                     GUI.color = Color.white;
                     EditorGUILayout.BeginHorizontal();
-                    GUI.Label(new Rect(0, 20, 70, 25), "Roundabout");
-                    GUI.Label(new Rect(0, 20, 70, 25), "Roundabout");
+                    GUI.Label(new Rect(0, 20, 100, 25), "Roundabout");
+                    GUI.Label(new Rect(0, 40, 100, 25), "Calculate Timers");
                     SelectedJunction.Rondo = GUI.Toggle(new Rect(110, 20, 20, 15), SelectedJunction.Rondo, "");
+                    SelectedJunction.timersCalc = GUI.Toggle(new Rect(110, 40, 20, 15), SelectedJunction.timersCalc, "");
                     if (SelectedJunction.Rondo == false) {
                         Color[] col = new Color[4] { Color.red, Color.green, Color.blue, Color.yellow };
                         GUI.Label(new Rect(0, 60, 120, 15), "Timers");
@@ -172,26 +177,34 @@ namespace QPathFinder {
                     GUI.Label(new Rect(0, 20, 70, 15), "Name");
                     GUI.Label(new Rect(0, 40, 70, 15), "Lines IN");
                     GUI.Label(new Rect(0, 60, 70, 15), "Lines OUT");
-                    SelectedStreet.name = GUI.TextField(new Rect(45, 20, 90, 15), SelectedStreet.name, 25);
+                    SelectedStreet.Name = GUI.TextField(new Rect(45, 20, 90, 15), SelectedStreet.Name, 25);
                     GUI.Label(new Rect(90, 40, 20, 15), SelectedStreet.ifrom.ToString());
                     GUI.Label(new Rect(90, 60, 20, 15), SelectedStreet.ito.ToString());
                     if (GUI.Button(new Rect(105, 40, 15, 15), "<")) {
                         SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom - 1), 0, 10);
+                        SelectedStreet.Calculate();
+                        script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
                     if (GUI.Button(new Rect(120, 40, 15, 15), ">")) {
                         SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom + 1), 0, 10);
+                        SelectedStreet.Calculate();
+                        script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
                     if (GUI.Button(new Rect(105, 60, 15, 15), "<")) {
                         SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito - 1), 0, 10);
+                        SelectedStreet.Calculate();
+                        script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
                     if (GUI.Button(new Rect(120, 60, 15, 15), ">")) {
                         SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito + 1), 0, 10);
+                        SelectedStreet.Calculate();
+                        script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
@@ -259,7 +272,7 @@ namespace QPathFinder {
                 foreach (Street s in script.graphData.AllStreets) {
                     guiPosition = HandleUtility.WorldToGUIPoint(s.center.Position);
                     int i = 0;
-                    string str = "<Color=#ffffffff>" + s.name + "</Color>";
+                    string str = "<Color=#ffffffff>" + s.Name + "</Color>";
                     GUI.Label(new Rect(guiPosition.x, guiPosition.y - 25, 100, 20), str, CustomGUI.GetStyleWithRichText());
                     for (int j = 0; j < 5; j++) {
                         if (s.Spawns[j] > 0) {
@@ -277,6 +290,12 @@ namespace QPathFinder {
                     if (j.phases != null && j.phases.Length > 0 && j.Rondo == false) {
                         guiPosition = HandleUtility.WorldToGUIPoint(j.transform.position);
                         GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + junctionGUITextColor + ">" + j.TimeToPhase.ToString("0.0") + "</Color>", CustomGUI.GetStyleWithRichText());
+                    }
+                    if (script.showSpawns) {
+                        foreach (Path p in j.paths) {
+                            guiPosition = HandleUtility.WorldToGUIPoint(p.tr.position);
+                            GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + costGUITextColor + ">" + p.eq.ToString() + "</Color>", CustomGUI.GetStyleWithRichText());
+                        }
                     }
                 }
                 Handles.EndGUI();
@@ -429,7 +448,7 @@ namespace QPathFinder {
         private void OnEnable() {
             sceneMode = SceneMode.None;
             script = FindObjectOfType<PathFinder>();
-            if (script.saveTimers) {
+            if (script.save) {
                 EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
                 EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             }

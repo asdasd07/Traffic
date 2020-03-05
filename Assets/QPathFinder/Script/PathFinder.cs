@@ -23,17 +23,23 @@ public class PathFinder : MonoBehaviour {
     public float WorkDelay = 5f, ShopingDelay = 1f;
     public bool spawn = true;
     public bool randomSpawn = false;
-    public bool saveTimers = true;
+    public bool save = true;
+    public bool calculateTimers = true;
     public bool drawPaths = true;
     public bool showNodeId = true;
     public bool showPathId = true;
     public bool showCosts = false;
     public bool showSpawns = true;
-    [HideInInspector]
-    public GraphData graphData = new GraphData();
+    [HideInInspector] public GraphData graphData = new GraphData();
+
     public void Awake() {
         _instance = this;
-
+        foreach (Junction j in graphData.AllJunctions) {
+            j.GlobalTimersCalc = calculateTimers;
+            foreach (Path p in j.paths) {
+                p.eq = 0;
+            }
+        }
         StartCoroutine(Spawn());
         StartCoroutine(RemoveCars());
     }

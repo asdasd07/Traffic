@@ -11,14 +11,19 @@ public class PathFollower : MonoBehaviour {
     public float velocity = 0;
     public List<Path> ReturningPath;
     public float ReturningDelay;
-    public int ReturningType=-1;
+    float waitingTime = 0;
+    public int ReturningType = -1;
     MeshRenderer mesh;
+    Material mat;
 
     protected int _currentIndex;
     Coroutine rou;
     private void Awake() {
         mesh = GetComponent<MeshRenderer>();
         mesh.enabled = false;
+        mat = new Material(mesh.sharedMaterial);
+        mat.color = new Color(1f, 0f, 0f);
+        mesh.material = mat;
     }
 
     public void Follow(List<Vector3> pointsToFollow, float moveSpeed) {
@@ -43,6 +48,7 @@ public class PathFollower : MonoBehaviour {
             yield break;
         }
         int QueuePos;
+        Color[] gradient = { Color.white, Color.green, Color.blue, Color.red };
         int index = 0;
         int end = path.Count;
         float dist, dist1, tar = 0, colo = 0;
@@ -115,14 +121,16 @@ public class PathFollower : MonoBehaviour {
             }
 
             //midpoint reached, recalculate next midpoint
-            if (dist < 0.4f) {
+            if (dist < 0.5f) {
                 float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
                 back = back > prop ? prop : back;
+                waitingTime += Time.deltaTime;
                 //canEnter, go to centerpoint, endpoint true
-                if (!endpoint && dist1 < 1.1f && path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
+                if (!endpoint && dist1 < 1.3f && path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
                     endpoint = true;
                     path[index].LeaveQueue();
                     QueuePos = path[index + 1].EnterQueue();
+                    waitingTime = 0;
                     //back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
                     dist = Vector3.Distance(transform.position, target);
                     back = 0;
@@ -134,6 +142,10 @@ public class PathFollower : MonoBehaviour {
                 transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
             }
             //transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
+            float waitingScale = waitingTime / 10;
+            int integer = Mathf.Clamp(Mathf.FloorToInt(waitingScale), 0, 2);
+            mat.color = Color.Lerp(gradient[integer], gradient[integer + 1], waitingScale - integer);
+            mesh.material = mat;
             yield return null;
         }
         path[index].LeaveQueue();

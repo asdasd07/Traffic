@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.IO;
 using UnityEditor;
+using System;
 
 public enum PathLineType {
     Straight,
@@ -31,6 +32,7 @@ public class Node {
 // Path is a connection between 2 Nodes. It will have zero cost by default unless specified in inspector. 
 // A path can be a oneway too. 
 [System.Serializable]
+//[SerializeField]
 public class Path {
     [SerializeField] [HideInInspector] public Node a, b;
     public int IDOfA {
@@ -44,7 +46,6 @@ public class Path {
     }
     public float Cost {
         get { return CurrentQueue + cost; }
-        //set { cost = value; }
     }
     public float SumaryWaitingTime {
         get {
@@ -132,7 +133,11 @@ public class GraphData {
 
     [HideInInspector] public Dictionary<Vector2Int, int> pathsByNodes = new Dictionary<Vector2Int, int>();
 
-
+    [Serializable]
+    struct savingStructure {
+        public float[][] Timers;
+        public int[][] eqCounter;
+    }
     public void loadTimers() {
         string destination = Application.persistentDataPath + "/save2.dat";
         FileStream file;
@@ -143,13 +148,20 @@ public class GraphData {
             return;
         }
         BinaryFormatter bf = new BinaryFormatter();
+        savingStructure sav = (savingStructure)bf.Deserialize(file);
+        float[][] Timers = sav.Timers;
+        int[][] eqCounter = sav.eqCounter;
 
-        float[][] master = (float[][])bf.Deserialize(file);
-        if (AllJunctions.Count != master.Length) {
+        if (AllJunctions.Count != Timers.Length) {
             return;
         }
         for (int i = 0; i < AllJunctions.Count; i++) {
-            AllJunctions[i].Timers = master[i];
+            AllJunctions[i].Timers = Timers[i];
+            if (AllJunctions[i].paths.Count == eqCounter[i].Length) {
+                for (int j = 0; j < AllJunctions[i].paths.Count; j++) {
+                    AllJunctions[i].paths[j].eq = eqCounter[i][j];
+                }
+            }
         }
         file.Close();
         Debug.Log("File loaded");
@@ -161,14 +173,22 @@ public class GraphData {
         if (File.Exists(destination)) {
             File.Delete(destination);
         }
-
         BinaryFormatter bf = new BinaryFormatter();
-        float[][] master = new float[AllJunctions.Count][];
+        float[][] Timers = new float[AllJunctions.Count][];
+        int[][] eqCounter = new int[AllJunctions.Count][];
         for (int i = 0; i < AllJunctions.Count; i++) {
-            master[i] = AllJunctions[i].Timers;
+            Timers[i] = AllJunctions[i].Timers;
+            eqCounter[i] = new int[AllJunctions[i].paths.Count];
+            for (int j = 0; j < AllJunctions[i].paths.Count; j++) {
+                eqCounter[i][j] = AllJunctions[i].paths[j].eq;
+            }
         }
+        savingStructure sav = new savingStructure {
+            Timers = Timers,
+            eqCounter = eqCounter
+        };
         file = File.Create(destination);
-        bf.Serialize(file, master);
+        bf.Serialize(file, sav);
         file.Close();
         Debug.Log("File saved");
     }
