@@ -49,8 +49,8 @@ public class Street : MonoBehaviour {
     }
     void Clear() {
         foreach (Path p in paths) {
-            if (p.tr != null) {
-                DestroyImmediate(p.tr.gameObject);
+            if (p.transform != null) {
+                DestroyImmediate(p.transform.gameObject);
             }
         }
         paths.Clear();
@@ -149,8 +149,8 @@ public class Street : MonoBehaviour {
         List<Node> nod3 = new List<Node>();
         List<Node> nod4 = new List<Node>();
         foreach (Path p in paths) {
-            if (p.tr != null) {
-                DestroyImmediate(p.tr.gameObject);
+            if (p.transform != null) {
+                DestroyImmediate(p.transform.gameObject);
             }
         }
         paths.Clear();
@@ -202,10 +202,10 @@ public class Street : MonoBehaviour {
     }
     public void Select(bool light = true) {
         List<MeshRenderer> mats = new List<MeshRenderer>();
-        Material mat = new Material(source: paths.Find(p => p.tr != null).tr.GetComponent<MeshRenderer>().sharedMaterial);
+        Material mat = new Material(source: paths.Find(p => p.transform != null).transform.GetComponent<MeshRenderer>().sharedMaterial);
         foreach (Path p in paths) {
-            if (p.tr) {
-                mats.Add(p.tr.GetComponent<MeshRenderer>());
+            if (p.transform) {
+                mats.Add(p.transform.GetComponent<MeshRenderer>());
             }
         }
         if (light) {

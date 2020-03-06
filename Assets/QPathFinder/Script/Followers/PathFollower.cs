@@ -112,7 +112,7 @@ public class PathFollower : MonoBehaviour {
                 back = back > prop ? prop : back;
                 waitingTime += Time.deltaTime;
                 //canEnter, go to centerpoint, endpoint true
-                if (!endpoint && dist1 < 1.3f && path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
+                if (!endpoint && dist1 < 1.3f && path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].prioriold)) {
                     endpoint = true;
                     path[index].LeaveQueue();
                     QueuePos = path[index + 1].EnterQueue();

@@ -481,8 +481,8 @@ public class Junction : MonoBehaviour {
     }
     void Clear() {
         foreach (Path p in paths) {
-            if (p.tr != null) {
-                DestroyImmediate(p.tr.gameObject);
+            if (p.transform != null) {
+                DestroyImmediate(p.transform.gameObject);
             }
         }
         paths.Clear();
