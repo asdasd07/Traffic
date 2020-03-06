@@ -32,7 +32,6 @@ namespace QPathFinder {
         [MenuItem("GameObject/Create a 2D PathFinder in scene with a collider")]
         public static void Create2DPathFinderObjectInScene() {
             if (GameObject.FindObjectOfType<PathFinder>() == null) {
-                var managerGo = new GameObject("PathFinder");
                 var colliderGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 colliderGo.name = "Ground";
                 colliderGo.GetComponent<Renderer>().sharedMaterial.SetColor("_Color", Color.black);
@@ -40,17 +39,12 @@ namespace QPathFinder {
                 colliderGo.transform.localScale = new Vector3(100f, 100f, 1f); ;
                 var boxCollider = colliderGo.AddComponent<BoxCollider>();
                 boxCollider.isTrigger = true;
-
-                var manager = managerGo.AddComponent<PathFinder>();
-            } else {
-                if (Logger.CanLogError) Logger.LogError("PathFollower Script already exists!");
             }
         }
 
         [MenuItem("GameObject/Create a 3D PathFinder in scene with a collider")]
         public static void Create3DPathFinderObjectInScene() {
             if (GameObject.FindObjectOfType<PathFinder>() == null) {
-                var managerGo = new GameObject("PathFinder");
                 var colliderGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 colliderGo.name = "Ground";
                 colliderGo.GetComponent<Renderer>().sharedMaterial.SetColor("_Color", Color.green);
@@ -60,10 +54,6 @@ namespace QPathFinder {
 
                 var boxCollider = colliderGo.AddComponent<BoxCollider>();
                 boxCollider.isTrigger = true;
-
-                var manager = managerGo.AddComponent<PathFinder>();
-            } else {
-                if (Logger.CanLogError) Logger.LogError("PathFollower Script already exists!");
             }
         }
 
@@ -324,17 +314,14 @@ namespace QPathFinder {
 
         void UpdateMouseInput() {
             Event e = Event.current;
-            if (e.type == EventType.MouseDown) {
-                if (e.button == 0)
-                    OnMouseClick(e.mousePosition);
-            }
+            if (e.type == EventType.MouseDown && e.button == 0)
+                OnMouseClick(e.mousePosition);
         }
 
         void OnMouseClick(Vector2 mousePos) {
             LayerMask backgroundLayerMask = 1 << LayerMask.NameToLayer(script.graphData.groundColliderLayerName);
             Ray ray = HandleUtility.GUIPointToWorldRay(mousePos);
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit, 100000f, backgroundLayerMask)) {
+            if (Physics.Raycast(ray, out RaycastHit hit, 100000f, backgroundLayerMask)) {
                 if (sceneMode == SceneMode.AddJunction) {
                     Vector3 hitPos = hit.point;
                     hitPos += (-ray.direction.normalized) * script.graphData.heightFromTheGround;
@@ -394,7 +381,6 @@ namespace QPathFinder {
             }
         }
 
-
         void CreateJunction(Vector3 pos) {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             go.name = "Junction";
@@ -444,7 +430,6 @@ namespace QPathFinder {
             script.graphData.Clear();
         }
 
-
         private void OnEnable() {
             sceneMode = SceneMode.None;
             script = FindObjectOfType<PathFinder>();
@@ -458,12 +443,11 @@ namespace QPathFinder {
         }
         void OnPlayModeStateChanged(PlayModeStateChange state) {
             if (state == PlayModeStateChange.EnteredEditMode) {
-                script.graphData.loadTimers();
+                script.graphData.LoadTimers();
             }
             if (state == PlayModeStateChange.ExitingPlayMode) {
-                script.graphData.saveTimers();
+                script.graphData.SaveTimers();
             }
         }
-
     }
 }

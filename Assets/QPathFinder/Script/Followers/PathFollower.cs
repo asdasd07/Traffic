@@ -11,8 +11,8 @@ public class PathFollower : MonoBehaviour {
     public float velocity = 0;
     public List<Path> ReturningPath;
     public float ReturningDelay;
-    float waitingTime = 0;
     public int ReturningType = -1;
+    float waitingTime = 0;
     MeshRenderer mesh;
     Material mat;
 
@@ -21,8 +21,9 @@ public class PathFollower : MonoBehaviour {
     private void Awake() {
         mesh = GetComponent<MeshRenderer>();
         mesh.enabled = false;
-        mat = new Material(mesh.sharedMaterial);
-        mat.color = new Color(1f, 0f, 0f);
+        mat = new Material(mesh.sharedMaterial) {
+            color = new Color(1f, 0f, 0f)
+        };
         mesh.material = mat;
     }
 
@@ -31,17 +32,17 @@ public class PathFollower : MonoBehaviour {
         this.moveSpeed = moveSpeed;
 
         StopFollowing();
-
         _currentIndex = 0;
-
         StartCoroutine(FollowPath());
     }
+
     public void Follow(List<Path> path) {
         if (rou != null) {
             StopCoroutine(rou);
         }
         rou = StartCoroutine(FollowRoutine(path));
     }
+
     IEnumerator FollowRoutine(List<Path> path) {
         if (path == null || path.Count < 1) {
             Debug.Log("path empty");
@@ -51,7 +52,7 @@ public class PathFollower : MonoBehaviour {
         Color[] gradient = { Color.white, Color.green, Color.blue, Color.red };
         int index = 0;
         int end = path.Count;
-        float dist, dist1, tar = 0, colo = 0;
+        float dist, dist1, colo = 0;
         bool endpoint = false;
         transform.position = path[0].a.Position;
         Vector3 dir = path[0].a.Position - path[0].b.Position;
@@ -76,33 +77,18 @@ public class PathFollower : MonoBehaviour {
             dist = Vector3.Distance(transform.position, target);
             dist1 = Vector3.Distance(transform.position, path[index].b.Position);
             float angle = dist1 > 0.2f ? Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target - transform.position)) : Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target2 ?? target - transform.position));
-            //if (dist < 0.5f) {
-            //    if (!endpoint) {
-            //        tar = 0.1f;
-            //    } else {
-            //        tar = 1.0f;
-            //    }
-            //} else if (dist < 1f) {
-            //    tar = 1.2f;
-            //} else if (dist < 1.5f) {
-            //    tar = 1.7f;
-            //} else {
-            //    tar = 3;
-            //}
+            float tar;
 
             if (dist < 0.5f && !endpoint) {
                 tar = 0.1f;
             } else {
                 //y = 0.992881 + 0.18181*x - 0.4129524*x^2 + 0.4111319*x^3
                 tar = 1f + 0.2f * dist - 0.4f * Mathf.Pow(dist, 2) + 0.4f * Mathf.Pow(dist, 3);
-                //tar = dist * dist * 1.1f - dist * 1.4f + 1.5f;
                 tar = tar > 3 ? 3 : tar;
             }
             if (dist >= 0.4f) {
                 tar = angle < 3 ? tar : tar / (angle / 3);
             }
-
-
             velocity = Mathf.SmoothDamp(velocity, tar, ref colo, 0.3f);
 
             //centerpoint reached, index++, endpoint false
@@ -141,7 +127,6 @@ public class PathFollower : MonoBehaviour {
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target - transform.position), 100f * Time.deltaTime);
                 transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
             }
-            //transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
             float waitingScale = waitingTime / 10;
             int integer = Mathf.Clamp(Mathf.FloorToInt(waitingScale), 0, 2);
             mat.color = Color.Lerp(gradient[integer], gradient[integer + 1], waitingScale - integer);
@@ -167,7 +152,6 @@ public class PathFollower : MonoBehaviour {
 
     IEnumerator FollowPath() {
         yield return null;
-        if (Logger.CanLogInfo) Logger.LogInfo(string.Format("[{0}] Follow(), Speed:{1}", name, moveSpeed));
 
         while (true) {
             _currentIndex = Mathf.Clamp(_currentIndex, 0, pointsToFollow.Count - 1);
@@ -181,7 +165,6 @@ public class PathFollower : MonoBehaviour {
             yield return null;
         }
 
-        if (Logger.CanLogInfo) Logger.LogInfo("PathFollower completed!");
     }
 
     public virtual void MoveTo(int pointIndex) {
@@ -198,24 +181,12 @@ public class PathFollower : MonoBehaviour {
     protected virtual bool IsOnPoint(int pointIndex) { return (transform.position - pointsToFollow[pointIndex]).sqrMagnitude < 0.1f; }
 
     bool IsEndPoint(int pointIndex) {
-        return pointIndex == EndIndex();
-    }
-
-    int StartIndex() {
-        return 0;
-    }
-
-    public virtual Vector3 ConvertPointIfNeeded(Vector3 point) {
-        return point;
-    }
-
-    int EndIndex() {
-        return pointsToFollow.Count - 1;
+        return pointIndex == pointsToFollow.Count - 1;
     }
 
     int GetNextIndex(int currentIndex) {
         int nextIndex = -1;
-        if (currentIndex < EndIndex())
+        if (currentIndex < pointsToFollow.Count - 1)
             nextIndex = currentIndex + 1;
 
         return nextIndex;

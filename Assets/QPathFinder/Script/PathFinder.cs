@@ -10,7 +10,6 @@ public enum Execution {
 ///
 ///    PathFinder instance uses GraphData to find the shorted path between Nodes
 ///    
-
 public class PathFinder : MonoBehaviour {
 
     private static PathFinder _instance;
@@ -54,8 +53,9 @@ public class PathFinder : MonoBehaviour {
         foreach (Street s in graphData.AllStreets) {
             for (int j = 0; j < 5; j++) {
                 for (int i = 0; i < s.Spawns[j]; i++) {
-                    if (s.center.ID != -1)
+                    if (s.center.ID != -1) {
                         Spaw[j].Add(s.center.ID);
+                    }
                 }
             }
         }
@@ -173,8 +173,6 @@ public class PathFinder : MonoBehaviour {
             yield return new WaitForSeconds(2);
         }
     }
-    void Update() {
-    }
     List<Path> NodesToPath(List<Node> nodes) {
         List<Path> paths = new List<Path>();
         for (int i = 0; i < nodes.Count - 1; i++) {
@@ -198,11 +196,8 @@ public class PathFinder : MonoBehaviour {
 
     public void FindShortestPathOfNodes(int fromNodeID, int toNodeID, Execution executionType, System.Action<List<Node>> callback) {
         if (executionType == Execution.Asynchronously) {
-            if (Logger.CanLogInfo) Logger.LogInfo(" FindShortestPathAsynchronous triggered from " + fromNodeID + " to " + toNodeID, true);
             StartCoroutine(FindShortestPathAsynchonousInternal(fromNodeID, toNodeID, callback));
         } else {
-
-            if (Logger.CanLogInfo) Logger.LogInfo(" FindShortestPathSynchronous triggered from " + fromNodeID + " to " + toNodeID, true);
             callback(FindShortedPathSynchronousInternal(fromNodeID, toNodeID));
         }
     }
@@ -230,7 +225,6 @@ public class PathFinder : MonoBehaviour {
 
         int startPointID = fromNodeID;
         int endPointID = toNodeID;
-        bool found = false;
 
         graphData.ReGenerateIDs();
 
@@ -268,37 +262,23 @@ public class PathFinder : MonoBehaviour {
                 break;
 
             if (leastCostPoint == endPoint) {
-                found = true;
                 Node prevPoint = leastCostPoint;
                 while (prevPoint != null) {
                     finalPath.Insert(0, prevPoint);
                     prevPoint = prevPoint.previousNode;
-                }
-
-                if (Logger.CanLogInfo) {
-                    if (finalPath != null) {
-                        string str = "";
-                        foreach (var a in finalPath) {
-                            str += "=>" + a.ID.ToString();
-                        }
-                        Logger.LogInfo("Path found between " + fromNodeID + " and " + toNodeID + ":" + str, true);
-                    }
                 }
                 callback(finalPath);
                 yield break;
             }
 
-            //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
             foreach (var path in graphData.paths) {
                 if (path.IDOfA == leastCostPoint.ID
                 || path.IDOfB == leastCostPoint.ID) {
-                    if (path.isOneWay) {
-                        if (leastCostPoint.ID == path.IDOfB)
-                            continue;
+                    if (path.isOneWay && leastCostPoint.ID == path.IDOfB) {
+                        continue;
                     }
 
-                    Node otherPoint = path.IDOfA == leastCostPoint.ID ?
-                                            graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
+                    Node otherPoint = path.IDOfA == leastCostPoint.ID ? graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
 
                     if (otherPoint.heuristicDistance <= 0)
                         otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
@@ -325,102 +305,8 @@ public class PathFinder : MonoBehaviour {
 
             yield return null;
         }
-
-        if (!found) {
-            if (Logger.CanLogWarning) Logger.LogWarning("Path not found between " + fromNodeID + " and " + toNodeID, true);
-            callback(null);
-            yield break;
-        }
-
-        if (Logger.CanLogError) Logger.LogError("Unknown error while finding the path!", true);
 
         callback(null);
-        yield break;
-    }
-
-    protected IEnumerator FindPaths(Node startPoint, Node endPoint, List<Node> callback) {
-        if (callback == null)
-            yield break;
-
-        graphData.ReGenerateIDs();
-
-        if (startPoint == null || endPoint == null) {
-            yield break;
-        }
-        foreach (var point in graphData.nodes) {
-            point.heuristicDistance = -1;
-            point.previousNode = null;
-        }
-
-        List<Node> completedPoints = new List<Node>();
-        List<Node> nextPoints = new List<Node>();
-        List<Node> finalPath = new List<Node>();
-
-        startPoint.pathDistance = 0;
-        startPoint.heuristicDistance = Vector3.Distance(startPoint.Position, endPoint.Position);
-        nextPoints.Add(startPoint);
-
-        while (true) {
-            Node leastCostPoint = null;
-
-            float minCost = 99999;
-            foreach (var point in nextPoints) {
-                if (point.heuristicDistance <= 0)
-                    point.heuristicDistance = Vector3.Distance(point.Position, endPoint.Position) * 2;
-
-                if (minCost > point.combinedHeuristic) {
-                    leastCostPoint = point;
-                    minCost = point.combinedHeuristic;
-                }
-            }
-
-            if (leastCostPoint == null)
-                break;
-
-            if (leastCostPoint == endPoint) {
-                Node prevPoint = leastCostPoint;
-                while (prevPoint != null) {
-                    finalPath.Insert(0, prevPoint);
-                    prevPoint = prevPoint.previousNode;
-                }
-                callback = finalPath;
-                yield break;
-            }
-
-            //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
-            foreach (var path in graphData.paths) {
-                if (path.a == leastCostPoint
-                || path.b == leastCostPoint) {
-                    if (path.isOneWay) {
-                        if (leastCostPoint == path.b)
-                            continue;
-                    }
-                    Node otherPoint = path.a == leastCostPoint ? path.b : path.a;
-
-                    if (otherPoint.heuristicDistance <= 0)
-                        otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
-
-                    if (completedPoints.Contains(otherPoint))
-                        continue;
-
-                    if (nextPoints.Contains(otherPoint)) {
-                        if (otherPoint.pathDistance >
-                            (leastCostPoint.pathDistance + path.Cost)) {
-                            otherPoint.pathDistance = leastCostPoint.pathDistance + path.Cost;
-                            otherPoint.previousNode = leastCostPoint;
-                        }
-                    } else {
-                        otherPoint.pathDistance = leastCostPoint.pathDistance + path.Cost;
-                        otherPoint.previousNode = leastCostPoint;
-                        nextPoints.Add(otherPoint);
-                    }
-                }
-            }
-            nextPoints.Remove(leastCostPoint);
-            completedPoints.Add(leastCostPoint);
-            yield return null;
-        }
-        callback = null;
         yield break;
     }
 
@@ -470,13 +356,9 @@ public class PathFinder : MonoBehaviour {
                 if (path.a == leastCostPoint
                 || path.b == leastCostPoint) {
 
-                    if (path.isOneWay) {
-                        if (leastCostPoint == path.b)
-                            continue;
-                    }
+                    if (path.isOneWay && leastCostPoint == path.b) continue;
 
-                    Node otherPoint = path.a == leastCostPoint ?
-                                            path.b : path.a;
+                    Node otherPoint = path.a == leastCostPoint ? path.b : path.a;
 
                     if (otherPoint.heuristicDistance <= 0)
                         otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
@@ -509,7 +391,6 @@ public class PathFinder : MonoBehaviour {
     private List<Node> FindShortedPathSynchronousInternal(int fromNodeID, int toNodeID) {
         int startPointID = fromNodeID;
         int endPointID = toNodeID;
-        bool found = false;
 
         graphData.ReGenerateIDs();
 
@@ -547,27 +428,15 @@ public class PathFinder : MonoBehaviour {
                 break;
 
             if (leastCostPoint == endPoint) {
-                found = true;
                 Node prevPoint = leastCostPoint;
                 while (prevPoint != null) {
                     finalPath.Insert(0, prevPoint);
                     prevPoint = prevPoint.previousNode;
                 }
 
-                if (Logger.CanLogInfo) {
-                    if (finalPath != null) {
-                        string str = "";
-                        foreach (var a in finalPath) {
-                            str += "=>" + a.ID.ToString();
-                        }
-                        Logger.LogInfo("Path found between " + fromNodeID + " and " + toNodeID + ":" + str, true);
-                    }
-                }
-
                 return finalPath;
             }
 
-            //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
             foreach (var path in graphData.paths) {
                 if (path.IDOfA == leastCostPoint.ID
                 || path.IDOfB == leastCostPoint.ID) {
@@ -603,13 +472,6 @@ public class PathFinder : MonoBehaviour {
             nextPoints.Remove(leastCostPoint);
             completedPoints.Add(leastCostPoint);
         }
-
-        if (!found) {
-            if (Logger.CanLogWarning) Logger.LogWarning("Path not found between " + fromNodeID + " and " + toNodeID, true);
-            return null;
-        }
-
-        if (Logger.CanLogError) Logger.LogError("Unknown error while finding the path!", true);
         return null;
     }
     #endregion // PROTECTED

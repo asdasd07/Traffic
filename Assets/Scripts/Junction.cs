@@ -84,12 +84,6 @@ public class Phase {
         }
     }
     public float QueueTime = 5f;
-    public void addStreetDistinct(Vector2Int v) {
-        if (!streetsPaths.Exists(item => item == v)) {
-            streetsPaths.Add(v);
-        }
-    }
-
 }
 
 [System.Serializable]
@@ -476,10 +470,7 @@ public class Junction : MonoBehaviour {
         if (index >= streetEnd.Count) return null;
         return street[streetEnd[index].x].joints[streetEnd[index].y];
     }
-    Path GetPhasePath(int phase, int index) {
-        Vector2Int v = phases[phase].streetsPaths[index];
-        return street[v.x].paths[v.y];
-    }
+
     public void Destroy() {
         foreach (Street s in street) {
             if (s != null)
