@@ -28,7 +28,6 @@ namespace QPathFinder {
         const string pathGUITextColor = "#00ffffff";
         const string costGUITextColor = "#00a2ffff";
         const string junctionGUITextColor = "#00ff00ff";
-        const string groundColliderLayerName = "Default";
 
         [MenuItem("GameObject/Create a 2D PathFinder in scene with a collider")]
         public static void Create2DPathFinderObjectInScene() {
@@ -98,9 +97,6 @@ namespace QPathFinder {
                         ClearAll();
                     }
                     if (GUILayout.Button("Refresh Data")) {
-                        Debug.Log(script == null);
-                        Debug.Log(script.graphData == null);
-                        Debug.Log(script.graphData.AllStreets == null);
                         foreach (Street s in script.graphData.AllStreets) {
                             s.Recalculate();
                         }
@@ -149,12 +145,12 @@ namespace QPathFinder {
                     if (SelectedJunction.Rondo == false) {
                         Color[] col = new Color[4] { Color.red, Color.green, Color.blue, Color.yellow };
                         GUI.Label(new Rect(0, 60, 120, 15), "Timers");
-                        for (int i = 0; i < SelectedJunction.timers.Length; i++) {
+                        for (int i = 0; i < SelectedJunction.Timers.Length; i++) {
                             GUI.color = col[i];
-                            string tmp = GUI.TextField(new Rect(110, 60 + i * 20, 25, 15), SelectedJunction.timers[i].ToString(), 25);
+                            string tmp = GUI.TextField(new Rect(110, 60 + i * 20, 25, 15), SelectedJunction.Timers[i].ToString(), 25);
                             tmp = tmp.Length == 0 ? "0" : tmp;
                             try {
-                                SelectedJunction.timers[i] = float.Parse(tmp);
+                                SelectedJunction.Timers[i] = float.Parse(tmp);
                             }
                             catch (FormatException) { }
                         }
@@ -222,7 +218,7 @@ namespace QPathFinder {
         }
 
         private void DrawPathLine() {
-            if (script == null|| script.graphData == null || script.graphData.nodes == null)
+            if (script.graphData.nodes == null)
                 return;
 
             ColoredTexture Colors = new ColoredTexture();
@@ -230,11 +226,11 @@ namespace QPathFinder {
             Vector2 guiPosition;
 
             foreach (Path pd in script.graphData.paths) {
-                switch (pd.block) {
-                    case BlockType.Blocked:
+                switch (pd.Block) {
+                    case 0:
                         Handles.color = Color.red;
                         break;
-                    case BlockType.Priority:
+                    case 1:
                         Handles.color = Color.green;
                         break;
                     default:
@@ -242,10 +238,10 @@ namespace QPathFinder {
                         break;
                 }
                 if (script.drawPaths && sceneMode != SceneMode.SelectJunction)
-                    Handles.DrawLine(pd.a.position, pd.b.position);
+                    Handles.DrawLine(pd.a.Position, pd.b.Position);
 
                 Handles.BeginGUI();
-                currNode = (pd.a.position + pd.b.position) / 2;
+                currNode = (pd.a.Position + pd.b.Position) / 2;
                 guiPosition = HandleUtility.WorldToGUIPoint(currNode);
                 string str = "";
                 if (script.showPathId)
@@ -264,7 +260,7 @@ namespace QPathFinder {
             if (script.showSpawns) {
                 Handles.BeginGUI();
                 foreach (Street s in script.graphData.AllStreets) {
-                    guiPosition = HandleUtility.WorldToGUIPoint(s.center.position);
+                    guiPosition = HandleUtility.WorldToGUIPoint(s.center.Position);
                     int i = 0;
                     string str = "<Color=#ffffffff>" + s.Name + "</Color>";
                     GUI.Label(new Rect(guiPosition.x, guiPosition.y - 25, 100, 20), str, CustomGUI.GetStyleWithRichText());
@@ -283,14 +279,12 @@ namespace QPathFinder {
                 foreach (Junction j in script.graphData.AllJunctions) {
                     if (j.phases != null && j.phases.Length > 0 && j.Rondo == false) {
                         guiPosition = HandleUtility.WorldToGUIPoint(j.transform.position);
-                        GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + junctionGUITextColor + ">" + j.timeToPhase.ToString("0.0") + "</Color>", CustomGUI.GetStyleWithRichText());
+                        GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + junctionGUITextColor + ">" + j.TimeToPhase.ToString("0.0") + "</Color>", CustomGUI.GetStyleWithRichText());
                     }
                     if (script.showSpawns) {
                         foreach (Path p in j.paths) {
-                            if (p.transform) {
-                                guiPosition = HandleUtility.WorldToGUIPoint(p.transform.position);
-                                GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + costGUITextColor + ">" + p.entireQueue.ToString() + "</Color>", CustomGUI.GetStyleWithRichText());
-                            }
+                            guiPosition = HandleUtility.WorldToGUIPoint(p.tr.position);
+                            GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + costGUITextColor + ">" + p.eq.ToString() + "</Color>", CustomGUI.GetStyleWithRichText());
                         }
                     }
                 }
@@ -299,7 +293,7 @@ namespace QPathFinder {
             if (script.showNodeId) {
                 Handles.BeginGUI();
                 foreach (Node n in script.graphData.nodes) {
-                    guiPosition = HandleUtility.WorldToGUIPoint(n.position);
+                    guiPosition = HandleUtility.WorldToGUIPoint(n.Position);
                     GUI.Label(new Rect(guiPosition.x - 10, guiPosition.y - 30, 20, 20), "<Color=" + nodeGUITextColor + ">" + n.ID.ToString() + "</Color>", CustomGUI.GetStyleWithRichText());
                 }
                 Handles.EndGUI();
@@ -310,8 +304,8 @@ namespace QPathFinder {
                 for (int i = 0; i < SelectedJunction.phases.Length; i++) {
                     Handles.color = colors[i];
                     Vector3 v = new Vector3(0, i * 0.1f, 0);
-                    foreach (int j in SelectedJunction.phases[i].routes) {
-                        Handles.DrawLine(SelectedJunction.paths[j].a.position + v, SelectedJunction.paths[j].b.position + v);
+                    foreach (int j in SelectedJunction.phases[i].Routes) {
+                        Handles.DrawLine(SelectedJunction.paths[j].a.Position + v, SelectedJunction.paths[j].b.Position + v);
                     }
                 }
             }
@@ -325,7 +319,7 @@ namespace QPathFinder {
         }
 
         void OnMouseClick(Vector2 mousePos) {
-            LayerMask backgroundLayerMask = 1 << LayerMask.NameToLayer(groundColliderLayerName);
+            LayerMask backgroundLayerMask = 1 << LayerMask.NameToLayer(script.graphData.groundColliderLayerName);
             Ray ray = HandleUtility.GUIPointToWorldRay(mousePos);
             if (Physics.Raycast(ray, out RaycastHit hit, 100000f, backgroundLayerMask)) {
                 if (sceneMode == SceneMode.AddJunction) {
@@ -437,9 +431,6 @@ namespace QPathFinder {
         }
 
         private void OnEnable() {
-            foreach (Path p in script.graphData.paths) {
-                p.block = BlockType.Open;
-            }
             sceneMode = SceneMode.None;
             script = FindObjectOfType<PathFinder>();
             if (script.save) {

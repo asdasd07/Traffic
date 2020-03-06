@@ -6,19 +6,20 @@ using UnityEngine;
 
 [System.Serializable]
 public class Phase {
-    public List<int> routes = new List<int>();
+    public List<int> Routes = new List<int>();
     public List<Vector2Int> streetsPaths = new List<Vector2Int>();
+    public Phase() { }
     public Phase(Dictionary<int, string> dic, int mode, int i) {
         if (mode == 5) {
             switch (i) {
                 case 0:
-                    routes = (from x in dic where x.Value == "02" || x.Value == "01" || x.Value == "21" select x.Key).ToList();
+                    Routes = (from x in dic where x.Value == "02" || x.Value == "01" || x.Value == "21" select x.Key).ToList();
                     break;
                 case 1:
-                    routes = (from x in dic where x.Value == "12" || x.Value == "20" || x.Value == "21" select x.Key).ToList();
+                    Routes = (from x in dic where x.Value == "12" || x.Value == "20" || x.Value == "21" select x.Key).ToList();
                     break;
                 case 2:
-                    routes = (from x in dic where x.Value == "12" || x.Value == "10" || x.Value == "02" select x.Key).ToList();
+                    Routes = (from x in dic where x.Value == "12" || x.Value == "10" || x.Value == "02" select x.Key).ToList();
                     break;
             }
         } else {
@@ -49,40 +50,40 @@ public class Phase {
             switch (i) {
                 case 0:
                     if (mode % 2 == 0) {
-                        routes = (from x in dic where x.Value == "00" || x.Value == "01" || x.Value == "02" select x.Key).ToList();
-                        if (routes.Count != 0) {
-                            routes.AddRange(from x in dic where x.Value == "32" select x.Key);
+                        Routes = (from x in dic where x.Value == "00" || x.Value == "01" || x.Value == "02" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "32" select x.Key);
                         }
-                    } else { routes = (from x in dic where x.Value == "32" || x.Value == "12" || x.Value == "00" || x.Value == "20" select x.Key).ToList(); }
+                    } else { Routes = (from x in dic where x.Value == "32" || x.Value == "12" || x.Value == "00" || x.Value == "20" select x.Key).ToList(); }
                     break;
                 case 1:
                     if (mode < 2) {
-                        routes = (from x in dic where x.Value == "10" || x.Value == "11" || x.Value == "12" select x.Key).ToList();
-                        if (routes.Count != 0) {
-                            routes.AddRange(from x in dic where x.Value == "02" select x.Key);
+                        Routes = (from x in dic where x.Value == "10" || x.Value == "11" || x.Value == "12" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "02" select x.Key);
                         }
-                    } else { routes = (from x in dic where x.Value == "02" || x.Value == "22" || x.Value == "10" || x.Value == "30" select x.Key).ToList(); }
+                    } else { Routes = (from x in dic where x.Value == "02" || x.Value == "22" || x.Value == "10" || x.Value == "30" select x.Key).ToList(); }
                     break;
                 case 2:
                     if (mode % 2 == 0) {
-                        routes = (from x in dic where x.Value == "20" || x.Value == "21" || x.Value == "22" select x.Key).ToList();
-                        if (routes.Count != 0) {
-                            routes.AddRange(from x in dic where x.Value == "12" select x.Key);
+                        Routes = (from x in dic where x.Value == "20" || x.Value == "21" || x.Value == "22" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "12" select x.Key);
                         }
-                    } else { routes = (from x in dic where x.Value == "21" || x.Value == "22" || x.Value == "01" || x.Value == "02" select x.Key).ToList(); }
+                    } else { Routes = (from x in dic where x.Value == "21" || x.Value == "22" || x.Value == "01" || x.Value == "02" select x.Key).ToList(); }
                     break;
                 case 3:
                     if (mode < 2) {
-                        routes = (from x in dic where x.Value == "30" || x.Value == "31" || x.Value == "32" select x.Key).ToList();
-                        if (routes.Count != 0) {
-                            routes.AddRange(from x in dic where x.Value == "22" select x.Key);
+                        Routes = (from x in dic where x.Value == "30" || x.Value == "31" || x.Value == "32" select x.Key).ToList();
+                        if (Routes.Count != 0) {
+                            Routes.AddRange(from x in dic where x.Value == "22" select x.Key);
                         }
-                    } else { routes = (from x in dic where x.Value == "11" || x.Value == "12" || x.Value == "31" || x.Value == "32" select x.Key).ToList(); }
+                    } else { Routes = (from x in dic where x.Value == "11" || x.Value == "12" || x.Value == "31" || x.Value == "32" select x.Key).ToList(); }
                     break;
             }
         }
     }
-    public float queueTime = 5f;
+    public float QueueTime = 5f;
 }
 
 [System.Serializable]
@@ -91,15 +92,17 @@ public class Junction : MonoBehaviour {
     public List<Street> street = new List<Street>();
     public List<Path> paths = new List<Path>();
     public Phase[] phases;
-    public float timeToPhase = 0f;
+    public float TimeToPhase = 0f;
     public List<Vector2Int> streetEnd = new List<Vector2Int>();
     public float max = 1;
     public float cycleTime = 20f;
     public int phase = 0;
-    [SerializeField] bool rondo = false;
+    [SerializeField]
+    bool rondo = false;
     public bool timersCalc = true;
-    [HideInInspector] public bool globalTimersCalc = true;
-    [SerializeField] public float[] timers;
+    [HideInInspector] public bool GlobalTimersCalc = true;
+    [SerializeField]
+    public float[] Timers;
 
     public bool Rondo {
         get => rondo; set {
@@ -130,36 +133,37 @@ public class Junction : MonoBehaviour {
                 tim += 0.1f;
                 yield return new WaitForSeconds(0.1f);
             }
-            if (phases[phase].routes.Count != 0) {
+            if (phases[phase].Routes.Count != 0) {
                 yield return new WaitForSeconds(1);
-                phases[phase].queueTime = 0;
+                phases[phase].QueueTime = 0;
                 foreach (Vector2Int v in phases[phase].streetsPaths) {
                     //Debug.Log(street[v.x].paths[v.y].autoGeneratedID + street[v.x].paths[v.y].CurrentQueue);
-                    phases[phase].queueTime += street[v.x].paths[v.y].SumaryWaitingTime;
+                    phases[phase].QueueTime += street[v.x].paths[v.y].SumaryWaitingTime;
                 }
-                foreach (int i in phases[phase].routes) {
-                    paths[i].block = BlockType.Open;
+                foreach (int i in phases[phase].Routes) {
+                    paths[i].Block = 2;//free
                 }
-                if (globalTimersCalc && timersCalc && phase == phases.Length - 1) {
+                if (GlobalTimersCalc && timersCalc && phase == phases.Length - 1) {
                     float allTime = 0;
                     float oneTen = 0.1f * cycleTime;
                     foreach (Phase p in phases) {
-                        p.queueTime = p.queueTime < oneTen ? oneTen : p.queueTime;
-                        allTime += p.queueTime;
+                        p.QueueTime = p.QueueTime < oneTen ? oneTen : p.QueueTime;
+                        allTime += p.QueueTime;
                     }
-                    for (int i = 0; i < timers.Length; i++) {
-                        float scale = phases[i].queueTime / allTime;
-                        timers[i] = (float)Math.Round((double)(timers[i] + scale * cycleTime) / 2f, 1);
+                    for (int i = 0; i < Timers.Length; i++) {
+                        float scale = phases[i].QueueTime / allTime;
+                        Timers[i] = (float)Math.Round((double)(Timers[i] + scale * cycleTime) / 2f, 1);
                     }
                 }
-                timeToPhase = timers[phase];
-                while (timeToPhase > 0) {
+                TimeToPhase = Timers[phase];
+                while (TimeToPhase > 0) {
                     yield return new WaitForSeconds(0.1f);
-                    timeToPhase -= 0.1f;
+                    TimeToPhase -= 0.1f;
                 }
-                timeToPhase = 0;
+                TimeToPhase = 0;
+                //yield return new WaitForSeconds(Timers[phase]);
                 foreach (Path p in paths) {
-                    p.block = 0;//blocked
+                    p.Block = 0;//blocked
                 }
             }
             phase = (phase + 1) % phases.Length;
@@ -170,9 +174,9 @@ public class Junction : MonoBehaviour {
             for (int i = 0; i < paths.Count; i++) {
                 int k = (i + 1) % paths.Count;
                 if (paths[i].CurrentQueue == 0) {
-                    paths[k].block = BlockType.Open;
+                    paths[k].Block = 2;
                 } else {
-                    paths[k].block = BlockType.Priority;
+                    paths[k].Block = 1;
                 }
             }
             yield return new WaitForSeconds(0.1f);
@@ -243,10 +247,10 @@ public class Junction : MonoBehaviour {
                 }
             }
             for (int i = 0; i < circle.Count - 1; i++) {
-                Path p = new Path(circle[i], circle[i + 1], transform, HidePath.Internal, BlockType.Priority);
+                Path p = new Path(circle[i], circle[i + 1], transform, 1, 1);
                 paths.Add(p);
             }
-            Path cir = new Path(circle[circle.Count - 1], circle[0], transform, HidePath.Internal, BlockType.Priority);
+            Path cir = new Path(circle[circle.Count - 1], circle[0], transform, 1, 1);
             paths.Add(cir);
             return;
         }
@@ -257,13 +261,13 @@ public class Junction : MonoBehaviour {
                 int j = 0;
                 if (GetJoint(k).input.Count < GetJoint(1 - k).output.Count) {
                     for (int i = 0; i < jmax; i++) {
-                        Path cir = new Path(GetJoint(k).input[j], GetJoint(1 - k).output[i], transform, HidePath.Internal);
+                        Path cir = new Path(GetJoint(k).input[j], GetJoint(1 - k).output[i], transform, 1);
                         paths.Add(cir);
                         j = j + 1 < GetJoint(k).input.Count ? j + 1 : j;
                     }
                 } else {
                     for (int i = 0; i < jmax; i++) {
-                        Path cir = new Path(GetJoint(k).input[i], GetJoint(1 - k).output[j], transform, HidePath.Internal);
+                        Path cir = new Path(GetJoint(k).input[i], GetJoint(1 - k).output[j], transform, 1);
                         paths.Add(cir);
                         j = j + 1 < GetJoint(1 - k).output.Count ? j + 1 : j;
                     }
@@ -328,7 +332,7 @@ public class Junction : MonoBehaviour {
         }
         //
         foreach (Phase p in phases) {
-            foreach (int i in p.routes) {
+            foreach (int i in p.Routes) {
                 int a = paths[i].IDOfA;
                 int strid = street.FindIndex(item => item.nodes.Exists(nid => nid.ID == a));
                 if (strid != -1) {
@@ -339,13 +343,13 @@ public class Junction : MonoBehaviour {
         }
 
 
-        timers = new float[phases.Length];
+        Timers = new float[phases.Length];
         for (int j = 0; j < phases.Length; j++) {
-            timers[j] = 5f;
+            Timers[j] = 5f;
         }
 
         foreach (Path p in paths) {
-            p.block = BlockType.Blocked;
+            p.Block = 0;
         }
     }
 
@@ -413,15 +417,15 @@ public class Junction : MonoBehaviour {
         sstart = Mathf.Clamp(sstart, 0, max - 1);
         //Debug.Log(sstart + " " + sum + " " + maxs + " " + max + " " + maxp + " " + maxl + " " + tab[0] + " " + tab[1] + " " + tab[2]);
         for (int i = 0; i < tab[0]; i++) {//right
-            Path pat = new Path(GetJoint(curent).input[max - i - 1], GetJoint(p).output[maxp - i - 1], transform, HidePath.Internal);
+            Path pat = new Path(GetJoint(curent).input[max - i - 1], GetJoint(p).output[maxp - i - 1], transform, 1);
             tabs[2].Add(pat);
         }
         for (int i = 0; i < tab[1]; i++) {//streit
-            Path pat = new Path(GetJoint(curent).input[sstart - i], GetJoint(s).output[maxs - i - 1], transform, HidePath.Internal);
+            Path pat = new Path(GetJoint(curent).input[sstart - i], GetJoint(s).output[maxs - i - 1], transform, 1);
             tabs[1].Add(pat);
         }
         for (int i = 0; i < tab[2]; i++) {//left
-            Path pat = new Path(GetJoint(curent).input[i], GetJoint(l).output[i], transform, HidePath.Internal);
+            Path pat = new Path(GetJoint(curent).input[i], GetJoint(l).output[i], transform, 1);
             tabs[0].Add(pat);
         }
         return tabs;//lsp
@@ -430,17 +434,17 @@ public class Junction : MonoBehaviour {
         if (streetEnd.Count < 1) {
             return;
         }
-        Vector3 forw = GetJoint(0).position - transform.position;
+        Vector3 forw = GetJoint(0).Pos - transform.position;
         streetEnd.Sort(delegate (Vector2Int a, Vector2Int b) {
-            float angleA = Vector3.SignedAngle(forw, street[a.x].joints[a.y].position - transform.position, Vector3.up);
-            float angleB = Vector3.SignedAngle(forw, street[b.x].joints[b.y].position - transform.position, Vector3.up);
+            float angleA = Vector3.SignedAngle(forw, street[a.x].joints[a.y].Pos - transform.position, Vector3.up);
+            float angleB = Vector3.SignedAngle(forw, street[b.x].joints[b.y].Pos - transform.position, Vector3.up);
             if (angleA == angleB) return 0;
             else if (angleA > angleB) return -1;
             return 1;
         });
         if (street.Count == 3) {
-            float angleA = Vector3.SignedAngle(forw, GetJoint(1).position - GetJoint(0).position, Vector3.up);
-            float angleB = Vector3.SignedAngle(forw, GetJoint(2).position - GetJoint(0).position, Vector3.up);
+            float angleA = Vector3.SignedAngle(forw, GetJoint(1).Pos - GetJoint(0).Pos, Vector3.up);
+            float angleB = Vector3.SignedAngle(forw, GetJoint(2).Pos - GetJoint(0).Pos, Vector3.up);
             if (angleA > 120) {
                 Vector2Int temp = streetEnd[0];
                 streetEnd[0] = streetEnd[1];
@@ -477,8 +481,8 @@ public class Junction : MonoBehaviour {
     }
     void Clear() {
         foreach (Path p in paths) {
-            if (p.transform != null) {
-                DestroyImmediate(p.transform.gameObject);
+            if (p.tr != null) {
+                DestroyImmediate(p.tr.gameObject);
             }
         }
         paths.Clear();

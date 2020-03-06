@@ -27,6 +27,15 @@ public class PathFollower : MonoBehaviour {
         mesh.material = mat;
     }
 
+    public void Follow(List<Vector3> pointsToFollow, float moveSpeed) {
+        this.pointsToFollow = pointsToFollow;
+        this.moveSpeed = moveSpeed;
+
+        StopFollowing();
+        _currentIndex = 0;
+        StartCoroutine(FollowPath());
+    }
+
     public void Follow(List<Path> path) {
         if (rou != null) {
             StopCoroutine(rou);
@@ -45,10 +54,10 @@ public class PathFollower : MonoBehaviour {
         int end = path.Count;
         float dist, dist1, colo = 0;
         bool endpoint = false;
-        transform.position = path[0].a.position;
-        Vector3 dir = path[0].a.position - path[0].b.position;
+        transform.position = path[0].a.Position;
+        Vector3 dir = path[0].a.Position - path[0].b.Position;
         dir.Normalize();
-        while (path[index + 1].CanEnter(BlockType.Open) == false) {
+        while (path[index + 1].CanEnter(2) == false) {
             yield return null;
         }
         mesh.enabled = true;
@@ -56,17 +65,17 @@ public class PathFollower : MonoBehaviour {
         Vector3 target;
         float back;
         Vector3? target2 = null;
-        transform.position = path[index].a.position;
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(path[index].b.position - transform.position), 400f);
+        transform.position = path[index].a.Position;
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(path[index].b.Position - transform.position), 400f);
         QueuePos = path[index].EnterQueue();
-        dir = path[index].a.position - path[index].b.position;
+        dir = path[index].a.Position - path[index].b.Position;
         dir.Normalize();
         float padding = 0.4f;
-        back = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
-        target = path[index].b.position + dir * back;
+        back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
+        target = path[index].b.Position + dir * back;
         while (index < end) {
             dist = Vector3.Distance(transform.position, target);
-            dist1 = Vector3.Distance(transform.position, path[index].b.position);
+            dist1 = Vector3.Distance(transform.position, path[index].b.Position);
             float angle = dist1 > 0.2f ? Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target - transform.position)) : Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target2 ?? target - transform.position));
             float tar;
 
@@ -89,21 +98,21 @@ public class PathFollower : MonoBehaviour {
                 if (index + 1 == end) {
                     break;
                 }
-                dir = path[index].a.position - path[index].b.position;
+                dir = path[index].a.Position - path[index].b.Position;
                 dir.Normalize();
                 if (index + 1 != end) {
-                    target2 = path[index + 1].b.position;
+                    target2 = path[index + 1].b.Position;
                 }
-                back = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
+                back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
             }
 
             //midpoint reached, recalculate next midpoint
             if (dist < 0.5f) {
-                float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
+                float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
                 back = back > prop ? prop : back;
                 waitingTime += Time.deltaTime;
                 //canEnter, go to centerpoint, endpoint true
-                if (!endpoint && dist1 < 1.3f && path[index].leftQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
+                if (!endpoint && dist1 < 1.3f && path[index].sQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
                     endpoint = true;
                     path[index].LeaveQueue();
                     QueuePos = path[index + 1].EnterQueue();
@@ -113,7 +122,7 @@ public class PathFollower : MonoBehaviour {
                     back = 0;
                 }
             }
-            target = path[index].b.position + dir * back;
+            target = path[index].b.Position + dir * back;
             if (dist >= 0.1f) {
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target - transform.position), 100f * Time.deltaTime);
                 transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
@@ -141,5 +150,46 @@ public class PathFollower : MonoBehaviour {
 
     public void StopFollowing() { StopAllCoroutines(); }
 
+    IEnumerator FollowPath() {
+        yield return null;
+
+        while (true) {
+            _currentIndex = Mathf.Clamp(_currentIndex, 0, pointsToFollow.Count - 1);
+
+            if (IsOnPoint(_currentIndex)) {
+                if (IsEndPoint(_currentIndex)) break;
+                else _currentIndex = GetNextIndex(_currentIndex);
+            } else {
+                MoveTo(_currentIndex);
+            }
+            yield return null;
+        }
+
+    }
+
+    public virtual void MoveTo(int pointIndex) {
+        var targetPos = pointsToFollow[pointIndex];
+
+        var deltaPos = targetPos - transform.position;
+        //deltaPos.z = 0f;
+        transform.up = Vector3.up;
+        transform.forward = deltaPos.normalized;
+
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.smoothDeltaTime);
+    }
+
+    protected virtual bool IsOnPoint(int pointIndex) { return (transform.position - pointsToFollow[pointIndex]).sqrMagnitude < 0.1f; }
+
+    bool IsEndPoint(int pointIndex) {
+        return pointIndex == pointsToFollow.Count - 1;
+    }
+
+    int GetNextIndex(int currentIndex) {
+        int nextIndex = -1;
+        if (currentIndex < pointsToFollow.Count - 1)
+            nextIndex = currentIndex + 1;
+
+        return nextIndex;
+    }
 
 }
