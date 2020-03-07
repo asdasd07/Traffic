@@ -11,11 +11,10 @@ public enum Execution {
 ///    PathFinder instance uses GraphData to find the shorted path between Nodes
 ///    
 public class PathFinder : MonoBehaviour {
-
     private static PathFinder _instance;
     public static PathFinder instance { get { return _instance; } }
-    List<Transform> Cars = new List<Transform>();
-    Transform CarsBox;
+    List<Transform> cars = new List<Transform>();
+    Transform carsBox;
     public int amount = 10;
     public int maxCars = 100;
     public float CarsFreq = 0.1f;
@@ -34,9 +33,9 @@ public class PathFinder : MonoBehaviour {
     public void Awake() {
         _instance = this;
         foreach (Junction j in graphData.AllJunctions) {
-            j.GlobalTimersCalc = calculateTimers;
+            j.globalTimersCalc = calculateTimers;
             foreach (Path p in j.paths) {
-                p.eq = 0;
+                p.entireQueue = 0;
             }
         }
         StartCoroutine(Spawn());
@@ -125,13 +124,13 @@ public class PathFinder : MonoBehaviour {
     }
 
     PathFollower SpawnCar() {
-        if (!CarsBox) {
-            CarsBox = (new GameObject("Cars")).transform;
+        if (!carsBox) {
+            carsBox = (new GameObject("Cars")).transform;
         }
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.transform.localScale = new Vector3(0.4f, 0.4f, 0.8f);
-        go.transform.parent = CarsBox;
-        Cars.Add(go.transform);
+        go.transform.parent = carsBox;
+        cars.Add(go.transform);
         var fol = go.AddComponent<PathFollower>();
         return fol;
     }
@@ -168,8 +167,8 @@ public class PathFinder : MonoBehaviour {
     }
     IEnumerator RemoveCars() {
         while (true) {
-            Cars.RemoveAll(item => item == null);
-            amount = Cars.Count;
+            cars.RemoveAll(item => item == null);
+            amount = cars.Count;
             yield return new WaitForSeconds(2);
         }
     }
@@ -207,17 +206,14 @@ public class PathFinder : MonoBehaviour {
         Node nearestNode = null;
 
         foreach (var node in graphData.nodes) {
-            if (Vector3.Distance(node.Position, point) < minDistance) {
-                minDistance = Vector3.Distance(node.Position, point);
+            if (Vector3.Distance(node.position, point) < minDistance) {
+                minDistance = Vector3.Distance(node.position, point);
                 nearestNode = node;
             }
         }
 
         return nearestNode != null ? nearestNode.ID : -1;
     }
-
-    /*** Protected & Private ***/
-    #region PRIVATE
 
     protected IEnumerator FindShortestPathAsynchonousInternal(int fromNodeID, int toNodeID, System.Action<List<Node>> callback) {
         if (callback == null)
@@ -241,7 +237,7 @@ public class PathFinder : MonoBehaviour {
         List<Node> finalPath = new List<Node>();
 
         startPoint.pathDistance = 0;
-        startPoint.heuristicDistance = Vector3.Distance(startPoint.Position, endPoint.Position);
+        startPoint.heuristicDistance = Vector3.Distance(startPoint.position, endPoint.position);
         nextPoints.Add(startPoint);
 
         while (true) {
@@ -250,11 +246,11 @@ public class PathFinder : MonoBehaviour {
             float minCost = 99999;
             foreach (var point in nextPoints) {
                 if (point.heuristicDistance <= 0)
-                    point.heuristicDistance = Vector3.Distance(point.Position, endPoint.Position) * 2;
+                    point.heuristicDistance = Vector3.Distance(point.position, endPoint.position) * 2;
 
-                if (minCost > point.combinedHeuristic) {
+                if (minCost > point.CombinedHeuristic) {
                     leastCostPoint = point;
-                    minCost = point.combinedHeuristic;
+                    minCost = point.CombinedHeuristic;
                 }
             }
 
@@ -274,14 +270,14 @@ public class PathFinder : MonoBehaviour {
             foreach (var path in graphData.paths) {
                 if (path.IDOfA == leastCostPoint.ID
                 || path.IDOfB == leastCostPoint.ID) {
-                    if (path.isOneWay && leastCostPoint.ID == path.IDOfB) {
+                    if (leastCostPoint.ID == path.IDOfB) {
                         continue;
                     }
 
                     Node otherPoint = path.IDOfA == leastCostPoint.ID ? graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
 
                     if (otherPoint.heuristicDistance <= 0)
-                        otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
+                        otherPoint.heuristicDistance = Vector3.Distance(otherPoint.position, endPoint.position) + Vector3.Distance(otherPoint.position, startPoint.position);
 
                     if (completedPoints.Contains(otherPoint))
                         continue;
@@ -299,7 +295,6 @@ public class PathFinder : MonoBehaviour {
                     }
                 }
             }
-
             nextPoints.Remove(leastCostPoint);
             completedPoints.Add(leastCostPoint);
 
@@ -309,84 +304,6 @@ public class PathFinder : MonoBehaviour {
         callback(null);
         yield break;
     }
-
-    private List<Node> FindPathSynchronous(Node startPoint, Node endPoint) {
-        foreach (var point in graphData.nodes) {
-            point.heuristicDistance = -1;
-            point.previousNode = null;
-        }
-
-        List<Node> completedPoints = new List<Node>();
-        List<Node> nextPoints = new List<Node>();
-        List<Node> finalPath = new List<Node>();
-
-        startPoint.pathDistance = 0;
-        startPoint.heuristicDistance = Vector3.Distance(startPoint.Position, endPoint.Position);
-        nextPoints.Add(startPoint);
-
-        while (true) {
-            Node leastCostPoint = null;
-
-            float minCost = 99999;
-            foreach (var point in nextPoints) {
-                if (point.heuristicDistance <= 0)
-                    point.heuristicDistance = Vector3.Distance(point.Position, endPoint.Position) + Vector3.Distance(point.Position, startPoint.Position);
-
-                if (minCost > point.combinedHeuristic) {
-                    leastCostPoint = point;
-                    minCost = point.combinedHeuristic;
-                }
-            }
-
-            if (leastCostPoint == null)
-                break;
-
-            if (leastCostPoint == endPoint) {
-                Node prevPoint = leastCostPoint;
-                while (prevPoint != null) {
-                    finalPath.Insert(0, prevPoint);
-                    prevPoint = prevPoint.previousNode;
-                }
-
-                return finalPath;
-            }
-
-            //for (Path path = graphData.getnext(); path != null; path = graphData.getnext()) {
-            foreach (var path in graphData.paths) {
-                if (path.a == leastCostPoint
-                || path.b == leastCostPoint) {
-
-                    if (path.isOneWay && leastCostPoint == path.b) continue;
-
-                    Node otherPoint = path.a == leastCostPoint ? path.b : path.a;
-
-                    if (otherPoint.heuristicDistance <= 0)
-                        otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
-
-                    if (completedPoints.Contains(otherPoint))
-                        continue;
-
-                    if (nextPoints.Contains(otherPoint)) {
-                        if (otherPoint.pathDistance >
-                            (leastCostPoint.pathDistance + path.Cost)) {
-                            otherPoint.pathDistance = leastCostPoint.pathDistance + path.Cost;
-                            otherPoint.previousNode = leastCostPoint;
-                        }
-                    } else {
-                        otherPoint.pathDistance = leastCostPoint.pathDistance + path.Cost;
-                        otherPoint.previousNode = leastCostPoint;
-                        nextPoints.Add(otherPoint);
-                    }
-                }
-            }
-
-            nextPoints.Remove(leastCostPoint);
-            completedPoints.Add(leastCostPoint);
-        }
-
-        return null;
-    }
-
 
     private List<Node> FindShortedPathSynchronousInternal(int fromNodeID, int toNodeID) {
         int startPointID = fromNodeID;
@@ -407,7 +324,7 @@ public class PathFinder : MonoBehaviour {
         List<Node> finalPath = new List<Node>();
 
         startPoint.pathDistance = 0;
-        startPoint.heuristicDistance = Vector3.Distance(startPoint.Position, endPoint.Position);
+        startPoint.heuristicDistance = Vector3.Distance(startPoint.position, endPoint.position);
         nextPoints.Add(startPoint);
 
         while (true) {
@@ -416,11 +333,11 @@ public class PathFinder : MonoBehaviour {
             float minCost = 99999;
             foreach (var point in nextPoints) {
                 if (point.heuristicDistance <= 0)
-                    point.heuristicDistance = Vector3.Distance(point.Position, endPoint.Position) + Vector3.Distance(point.Position, startPoint.Position);
+                    point.heuristicDistance = Vector3.Distance(point.position, endPoint.position) + Vector3.Distance(point.position, startPoint.position);
 
-                if (minCost > point.combinedHeuristic) {
+                if (minCost > point.CombinedHeuristic) {
                     leastCostPoint = point;
-                    minCost = point.combinedHeuristic;
+                    minCost = point.CombinedHeuristic;
                 }
             }
 
@@ -433,24 +350,20 @@ public class PathFinder : MonoBehaviour {
                     finalPath.Insert(0, prevPoint);
                     prevPoint = prevPoint.previousNode;
                 }
-
                 return finalPath;
             }
 
             foreach (var path in graphData.paths) {
-                if (path.IDOfA == leastCostPoint.ID
-                || path.IDOfB == leastCostPoint.ID) {
+                if (path.IDOfA == leastCostPoint.ID || path.IDOfB == leastCostPoint.ID) {
 
-                    if (path.isOneWay) {
-                        if (leastCostPoint.ID == path.IDOfB)
-                            continue;
+                    if (leastCostPoint.ID == path.IDOfB) {
+                        continue;
                     }
 
-                    Node otherPoint = path.IDOfA == leastCostPoint.ID ?
-                                            graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
+                    Node otherPoint = path.IDOfA == leastCostPoint.ID ? graphData.nodes[path.IDOfB] : graphData.nodes[path.IDOfA];
 
                     if (otherPoint.heuristicDistance <= 0)
-                        otherPoint.heuristicDistance = Vector3.Distance(otherPoint.Position, endPoint.Position) + Vector3.Distance(otherPoint.Position, startPoint.Position);
+                        otherPoint.heuristicDistance = Vector3.Distance(otherPoint.position, endPoint.position) + Vector3.Distance(otherPoint.position, startPoint.position);
 
                     if (completedPoints.Contains(otherPoint))
                         continue;
@@ -468,11 +381,9 @@ public class PathFinder : MonoBehaviour {
                     }
                 }
             }
-
             nextPoints.Remove(leastCostPoint);
             completedPoints.Add(leastCostPoint);
         }
         return null;
     }
-    #endregion // PROTECTED
 }

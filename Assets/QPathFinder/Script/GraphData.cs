@@ -16,7 +16,6 @@ public enum PathLineType {
 public class GraphData {
     public PathLineType lineType;
     public float heightFromTheGround = 0;      // this represents how much offset we create our points from the ground ?
-    public string groundColliderLayerName = "Default";
 
     [HideInInspector] public List<Street> AllStreets = new List<Street>();
     [HideInInspector] public List<Junction> AllJunctions = new List<Junction>();
@@ -50,10 +49,10 @@ public class GraphData {
             return;
         }
         for (int i = 0; i < AllJunctions.Count; i++) {
-            AllJunctions[i].Timers = Timers[i];
+            AllJunctions[i].timers = Timers[i];
             if (AllJunctions[i].paths.Count == eqCounter[i].Length) {
                 for (int j = 0; j < AllJunctions[i].paths.Count; j++) {
-                    AllJunctions[i].paths[j].eq = eqCounter[i][j];
+                    AllJunctions[i].paths[j].entireQueue = eqCounter[i][j];
                 }
             }
         }
@@ -71,10 +70,10 @@ public class GraphData {
         float[][] Timers = new float[AllJunctions.Count][];
         int[][] eqCounter = new int[AllJunctions.Count][];
         for (int i = 0; i < AllJunctions.Count; i++) {
-            Timers[i] = AllJunctions[i].Timers;
+            Timers[i] = AllJunctions[i].timers;
             eqCounter[i] = new int[AllJunctions[i].paths.Count];
             for (int j = 0; j < AllJunctions[i].paths.Count; j++) {
-                eqCounter[i][j] = AllJunctions[i].paths[j].eq;
+                eqCounter[i][j] = AllJunctions[i].paths[j].entireQueue;
             }
         }
         SavingStructure sav = new SavingStructure {
