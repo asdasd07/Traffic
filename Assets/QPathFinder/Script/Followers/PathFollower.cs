@@ -3,35 +3,41 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// QPathFinder modified
+/// <summary>
+/// 
+/// </summary>
 public class PathFollower : MonoBehaviour {
-    protected List<Vector3> pointsToFollow;
-
-    public float moveSpeed = 10f;
-    public float rotateSpeed = 10f;
     public float velocity = 0;
-    public List<Path> ReturningPath;
-    public float ReturningDelay;
-    public int ReturningType = -1;
+    List<Path> returningPath;
+    float returningDelay;
+    int returningType = -1;
     float waitingTime = 0;
     MeshRenderer mesh;
-    Material mat;
+    Material material;
 
     protected int _currentIndex;
-    Coroutine rou;
+    Coroutine routine;
     private void Awake() {
         mesh = GetComponent<MeshRenderer>();
         mesh.enabled = false;
-        mat = new Material(mesh.sharedMaterial) {
+        material = new Material(mesh.sharedMaterial) {
             color = new Color(1f, 0f, 0f)
         };
-        mesh.material = mat;
+        mesh.material = material;
     }
 
+    public void Follow(List<Path> path, int ReturningType, float WaitingTime, List<Path> ReturningPath) {
+        returningType = ReturningType;
+        returningDelay = WaitingTime;
+        returningPath = ReturningPath;
+        Follow(path);
+    }
     public void Follow(List<Path> path) {
-        if (rou != null) {
-            StopCoroutine(rou);
+        if (routine != null) {
+            StopCoroutine(routine);
         }
-        rou = StartCoroutine(FollowRoutine(path));
+        routine = StartCoroutine(FollowRoutine(path));
     }
 
     IEnumerator FollowRoutine(List<Path> path) {
@@ -120,22 +126,22 @@ public class PathFollower : MonoBehaviour {
             }
             float waitingScale = waitingTime / 10;
             int integer = Mathf.Clamp(Mathf.FloorToInt(waitingScale), 0, 2);
-            mat.color = Color.Lerp(gradient[integer], gradient[integer + 1], waitingScale - integer);
-            mesh.material = mat;
+            material.color = Color.Lerp(gradient[integer], gradient[integer + 1], waitingScale - integer);
+            mesh.material = material;
             yield return null;
         }
         path[index].LeaveQueue();
-        if (ReturningType == -1) {
+        if (returningType == -1) {
             Destroy(gameObject);
         } else {
             mesh.enabled = false;
-            yield return new WaitForSeconds(ReturningDelay);
+            yield return new WaitForSeconds(returningDelay);
             mesh.enabled = true;
-            if (ReturningPath[0].street) {
-                ReturningPath[0].street.Spawns[ReturningType]--;
+            if (returningPath[0].street) {
+                returningPath[0].street.spawns[returningType]--;
             }
-            ReturningType = -1;
-            rou = StartCoroutine(FollowRoutine(ReturningPath));
+            returningType = -1;
+            routine = StartCoroutine(FollowRoutine(returningPath));
         }
     }
 
