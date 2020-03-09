@@ -94,6 +94,7 @@ public class Junction : MonoBehaviour {
     public float timeToPhase = 0f;
     public List<Vector2Int> streetEnd = new List<Vector2Int>();
     public float max = 1;
+    public float border = 1;
     public float cycleTime = 20f;
     public int phase = 0;
     [SerializeField] bool rondo = false;
@@ -209,7 +210,7 @@ public class Junction : MonoBehaviour {
         int maxinou = 0;
         if (street.Count > 1) {
             foreach (Street s in street) {
-                maxinou = Mathf.Max(s.ifrom, s.ito, maxinou);
+                maxinou = Mathf.Max(s.iFrom, s.iTo, maxinou);
             }
             maxinou = Mathf.Max(street.Count, maxinou);
         }

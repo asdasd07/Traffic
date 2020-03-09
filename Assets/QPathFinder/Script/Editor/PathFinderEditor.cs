@@ -169,31 +169,31 @@ namespace QPathFinder {
                     GUI.Label(new Rect(0, 40, 70, 15), "Lines IN");
                     GUI.Label(new Rect(0, 60, 70, 15), "Lines OUT");
                     SelectedStreet.Name = GUI.TextField(new Rect(45, 20, 90, 15), SelectedStreet.Name, 25);
-                    GUI.Label(new Rect(90, 40, 20, 15), SelectedStreet.ifrom.ToString());
-                    GUI.Label(new Rect(90, 60, 20, 15), SelectedStreet.ito.ToString());
+                    GUI.Label(new Rect(90, 40, 20, 15), SelectedStreet.iFrom.ToString());
+                    GUI.Label(new Rect(90, 60, 20, 15), SelectedStreet.iTo.ToString());
                     if (GUI.Button(new Rect(105, 40, 15, 15), "<")) {
-                        SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom - 1), 0, 10);
+                        SelectedStreet.iFrom = Mathf.Clamp((SelectedStreet.iFrom - 1), 0, 10);
                         SelectedStreet.Calculate();
                         script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
                     if (GUI.Button(new Rect(120, 40, 15, 15), ">")) {
-                        SelectedStreet.ifrom = Mathf.Clamp((SelectedStreet.ifrom + 1), 0, 10);
+                        SelectedStreet.iFrom = Mathf.Clamp((SelectedStreet.iFrom + 1), 0, 10);
                         SelectedStreet.Calculate();
                         script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
                     if (GUI.Button(new Rect(105, 60, 15, 15), "<")) {
-                        SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito - 1), 0, 10);
+                        SelectedStreet.iTo = Mathf.Clamp((SelectedStreet.iTo - 1), 0, 10);
                         SelectedStreet.Calculate();
                         script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();
                         script.graphData.ReGenerateIDs();
                     }
                     if (GUI.Button(new Rect(120, 60, 15, 15), ">")) {
-                        SelectedStreet.ito = Mathf.Clamp((SelectedStreet.ito + 1), 0, 10);
+                        SelectedStreet.iTo = Mathf.Clamp((SelectedStreet.iTo + 1), 0, 10);
                         SelectedStreet.Calculate();
                         script.graphData.ReGenerateIDs();
                         SelectedStreet.Recalculate();

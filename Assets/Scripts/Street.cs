@@ -25,9 +25,14 @@ public class Joint {
 
 [System.Serializable]
 public class Street : MonoBehaviour {
-    [HideInInspector] public Junction f, t;
-    public Vector3 from, to;
-    public int ifrom = 2, ito = 2;
+    //[HideInInspector] 
+    public Junction from, to;
+    //public Junction from, to;
+    public Vector3 fromMargin, toMargin;
+    public int iFrom = 2, iTo = 2;
+    //[HideInInspector] 
+    //public int iFrom = 2, iTo = 2;
+    //public Vector3 fromMargin, toMargin;
     public Node center;
     public string Name = "";
     public Joint[] joints = new Joint[2];
@@ -37,23 +42,23 @@ public class Street : MonoBehaviour {
 
 
     public void Init(Junction from, Junction to, int fNum = 1, int tNum = 1) {
-        ifrom = fNum; ito = tNum;
-        f = from;
-        t = to;
-        Vector3 norm = (t.transform.position - f.transform.position).normalized;
-        this.from = f.transform.position + norm * f.max;
-        this.to = t.transform.position - norm * t.max;
-        Vector3 center = (this.to + this.from) / 2;
+        iFrom = fNum; iTo = tNum;
+        this.from = from;
+        this.to = to;
+        Vector3 norm = (this.to.transform.position - this.from.transform.position).normalized;
+        this.fromMargin = this.from.transform.position + norm * this.from.max;
+        this.toMargin = this.to.transform.position - norm * this.to.max;
+        Vector3 center = (this.toMargin + this.fromMargin) / 2;
         this.center = new Node(center);
         nodes.Add(this.center);
         Calculate();
     }
     public void Destroy(Junction spare = null) {
-        if (f != spare) {
-            f.RemoveStreet(this);
+        if (from != spare) {
+            from.RemoveStreet(this);
         }
-        if (t != spare) {
-            t.RemoveStreet(this);
+        if (to != spare) {
+            to.RemoveStreet(this);
         }
         Clear();
         DestroyImmediate(gameObject);
@@ -69,32 +74,32 @@ public class Street : MonoBehaviour {
         nodes.Add(center);
     }
     public void Resize() {
-        float fmax = f.max;
-        float tmax = t.max;
-        Vector3 norm = t.transform.position - f.transform.position;
+        float fmax = from.max;
+        float tmax = to.max;
+        Vector3 norm = to.transform.position - from.transform.position;
         norm.Normalize();
         Vector2 p2 = Vector2.Perpendicular(new Vector2(norm.x, norm.z)).normalized;
         Vector3 perpedic = new Vector3(p2.x, 0, p2.y).normalized;
-        Vector3 jPerpedic = Vector3.Project(Perpedic(f), norm) + perpedic;
-        Vector3 jPerpedic2 = Vector3.Project(Perpedic(t), -norm) + perpedic;
+        Vector3 jPerpedic = Vector3.Project(Perpedic(from), norm) + perpedic;
+        Vector3 jPerpedic2 = Vector3.Project(Perpedic(to), -norm) + perpedic;
         for (int i = 0; i < joints[0].input.Count; i++) {
-            joints[0].input[i].position = (f.transform.position + norm * fmax + jPerpedic * (0.4f + i * 0.6f));
+            joints[0].input[i].position = (from.transform.position + norm * fmax + jPerpedic * (0.4f + i * 0.6f));
         }
         for (int i = 0; i < joints[0].output.Count; i++) {
-            joints[0].output[i].position = (f.transform.position + norm * fmax - jPerpedic * (0.4f + i * 0.6f));
+            joints[0].output[i].position = (from.transform.position + norm * fmax - jPerpedic * (0.4f + i * 0.6f));
         }
         for (int i = 0; i < joints[1].input.Count; i++) {
-            joints[1].input[i].position = (t.transform.position - norm * tmax - jPerpedic2 * (0.4f + i * 0.6f));
+            joints[1].input[i].position = (to.transform.position - norm * tmax - jPerpedic2 * (0.4f + i * 0.6f));
         }
         for (int i = 0; i < joints[1].output.Count; i++) {
-            joints[1].output[i].position = (t.transform.position - norm * tmax + jPerpedic2 * (0.4f + i * 0.6f));
+            joints[1].output[i].position = (to.transform.position - norm * tmax + jPerpedic2 * (0.4f + i * 0.6f));
         }
         foreach (Path p in paths) {
             p.Visualize();
         }
     }
     Vector3 Perpedic(Junction j) {
-        Vector3 perpedic = new Vector3(-(to.z - from.z), 0, to.x - from.x).normalized;
+        Vector3 perpedic = new Vector3(-(toMargin.z - fromMargin.z), 0, toMargin.x - fromMargin.x).normalized;
         int index = j.street.IndexOf(this);
         if (index == -1) {
             return perpedic;
@@ -104,16 +109,16 @@ public class Street : MonoBehaviour {
         int next = index < j.street.Count - 1 ? index + 1 : 0;
         next = next == prev ? index : next;
         if (j.street.Count > 1) {
-            Vector3 a = (j.street[prev].to - j.street[prev].from).normalized;
-            Vector3 b = (j.street[next].to - j.street[next].from).normalized;
-            if (Vector3.Distance(to, j.transform.position) < Vector3.Distance(from, j.transform.position)) {
+            Vector3 a = (j.street[prev].toMargin - j.street[prev].fromMargin).normalized;
+            Vector3 b = (j.street[next].toMargin - j.street[next].fromMargin).normalized;
+            if (Vector3.Distance(toMargin, j.transform.position) < Vector3.Distance(fromMargin, j.transform.position)) {
                 a = -a;
                 b = -b;
             }
-            if (Vector3.Distance(j.street[prev].to, j.transform.position) > Vector3.Distance(j.street[prev].from, j.transform.position)) {
+            if (Vector3.Distance(j.street[prev].toMargin, j.transform.position) > Vector3.Distance(j.street[prev].fromMargin, j.transform.position)) {
                 a = -a;
             }
-            if (Vector3.Distance(j.street[next].to, j.transform.position) > Vector3.Distance(j.street[next].from, j.transform.position)) {
+            if (Vector3.Distance(j.street[next].toMargin, j.transform.position) > Vector3.Distance(j.street[next].fromMargin, j.transform.position)) {
                 b = -b;
             }
             Vector3 v = (a - b).normalized;
@@ -129,12 +134,12 @@ public class Street : MonoBehaviour {
         return perpedic;
     }
     public void Recalculate() {
-        f.Calculate();
-        t.Calculate();
+        from.Calculate();
+        to.Calculate();
     }
 
     public void Calculate() {
-        Vector3 perpedic = new Vector3(-(to.z - from.z), 0, to.x - from.x);
+        Vector3 perpedic = new Vector3(-(toMargin.z - fromMargin.z), 0, toMargin.x - fromMargin.x);
         perpedic.Normalize();
 
         List<Node> nod1 = new List<Node>();
@@ -150,13 +155,13 @@ public class Street : MonoBehaviour {
         nodes.Clear();
         nodes.Add(center);
 
-        Vector3 norm = (t.transform.position - f.transform.position).normalized;
-        center.position = ((to + from) / 2 + norm * (f.max - t.max));
+        Vector3 norm = (to.transform.position - from.transform.position).normalized;
+        center.position = ((toMargin + fromMargin) / 2 + norm * (from.max - to.max));
 
         Node prev = center;
-        for (int i = 0; i < ifrom; i++) {
-            Node n1 = new Node(from - perpedic * (0.4f + i * 0.6f));
-            Node n3 = new Node(to - perpedic * (0.4f + i * 0.6f));
+        for (int i = 0; i < iFrom; i++) {
+            Node n1 = new Node(fromMargin - perpedic * (0.4f + i * 0.6f));
+            Node n3 = new Node(toMargin - perpedic * (0.4f + i * 0.6f));
             Node n2 = new Node(center.position - perpedic * (0.4f + i * 0.6f));
             nod1.Add(n1);
             nod2.Add(n3);
@@ -172,9 +177,9 @@ public class Street : MonoBehaviour {
             prev = n2;
         }
         prev = center;
-        for (int i = 0; i < ito; i++) {
-            Node n1 = new Node(to + perpedic * (0.4f + i * 0.6f));
-            Node n3 = new Node(from + perpedic * (0.4f + i * 0.6f));
+        for (int i = 0; i < iTo; i++) {
+            Node n1 = new Node(toMargin + perpedic * (0.4f + i * 0.6f));
+            Node n3 = new Node(fromMargin + perpedic * (0.4f + i * 0.6f));
             Node n2 = new Node(center.position + perpedic * (0.4f + i * 0.6f));
             nod3.Add(n1);
             nod4.Add(n3);
