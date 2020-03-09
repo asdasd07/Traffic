@@ -8,7 +8,12 @@ public enum SearchMode {
     Complex
 }
 
+/// QPathFinder
+/// <summary>
+/// 
+/// </summary>
 public static class PathFinderExtensions {
+
     /// Finds shortest path between Nodes.
     /// Once the path is found, it will return the path as List of Positions (not Nodes, but vector3. If you need Nodes, use FindShortestPathOfNodes). 
     /// <returns> Returns list of **Positions**</returns>
@@ -18,7 +23,6 @@ public static class PathFinderExtensions {
     /// <param name="executionType">Synchronous is immediate and locks the control till path is found and returns the path. 
     /// Asynchronous type runs in coroutines without locking the control. If you have more than 50 Nodes, Asynchronous is recommended</param>
     /// <param name="OnPathFound">Callback once the path is found</param>
-
     public static void FindShortestPathOfPoints(this PathFinder manager, int startNodeID, int endNodeID, PathLineType pathType, Execution executionType, System.Action<List<Vector3>> OnPathFound) {
         PathFollowerUtility.FindShortestPathOfPoints_Internal(manager, startNodeID, endNodeID, pathType, executionType, OnPathFound);
     }
@@ -34,13 +38,15 @@ public static class PathFinderExtensions {
     /// Asynchronous type runs in coroutines with out locking the control. If you have more than 50 Nodes, Asynchronous is recommended</param>
     /// <param name="searchMode"> This is still WIP. For now, Intermediate and Complex does a tad bit more calculations to make the path even shorter</param>
     /// <param name="OnPathFound">Callback once the path is found</param>
-
-
     public static void FindShortestPathOfPoints(this PathFinder manager, Vector3 startPoint, Vector3 endPoint, PathLineType pathType, Execution executionType, SearchMode searchMode, System.Action<List<Vector3>> OnPathFound) {
         PathFollowerUtility.FindShortestPathOfPoints_Internal(manager, startPoint, endPoint, pathType, executionType, searchMode, OnPathFound);
     }
 }
 
+/// QPathFinder
+/// <summary>
+/// 
+/// </summary>
 public static class PathFollowerUtility {
     /// <summary>
     /// Stops the gameobject while moving along the path. 

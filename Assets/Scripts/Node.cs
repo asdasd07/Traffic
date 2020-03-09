@@ -2,7 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// Single Node. From which we can create Paths ( or connections )
+/// QPathFinder
+/// Single Node. From which we can create Paths ( or connections )
+/// <summary>
+/// 
+/// </summary>
 [System.Serializable]
 public class Node {
     public Node(Vector3 pos) { position = pos; }
