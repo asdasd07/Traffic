@@ -23,8 +23,8 @@ public static class PathFinderExtensions {
     /// <param name="executionType">Synchronous is immediate and locks the control till path is found and returns the path. 
     /// Asynchronous type runs in coroutines without locking the control. If you have more than 50 Nodes, Asynchronous is recommended</param>
     /// <param name="OnPathFound">Callback once the path is found</param>
-    public static void FindShortestPathOfPoints(this PathFinder manager, int startNodeID, int endNodeID, PathLineType pathType, Execution executionType, System.Action<List<Vector3>> OnPathFound) {
-        PathFollowerUtility.FindShortestPathOfPoints_Internal(manager, startNodeID, endNodeID, pathType, executionType, OnPathFound);
+    public static void FindShortestPathOfPoints(this PathFinder manager, int startNodeID, int endNodeID, Execution executionType, System.Action<List<Vector3>> OnPathFound) {
+        PathFollowerUtility.FindShortestPathOfPoints_Internal(manager, startNodeID, endNodeID, executionType, OnPathFound);
     }
 
 
@@ -38,8 +38,8 @@ public static class PathFinderExtensions {
     /// Asynchronous type runs in coroutines with out locking the control. If you have more than 50 Nodes, Asynchronous is recommended</param>
     /// <param name="searchMode"> This is still WIP. For now, Intermediate and Complex does a tad bit more calculations to make the path even shorter</param>
     /// <param name="OnPathFound">Callback once the path is found</param>
-    public static void FindShortestPathOfPoints(this PathFinder manager, Vector3 startPoint, Vector3 endPoint, PathLineType pathType, Execution executionType, SearchMode searchMode, System.Action<List<Vector3>> OnPathFound) {
-        PathFollowerUtility.FindShortestPathOfPoints_Internal(manager, startPoint, endPoint, pathType, executionType, searchMode, OnPathFound);
+    public static void FindShortestPathOfPoints(this PathFinder manager, Vector3 startPoint, Vector3 endPoint, Execution executionType, SearchMode searchMode, System.Action<List<Vector3>> OnPathFound) {
+        PathFollowerUtility.FindShortestPathOfPoints_Internal(manager, startPoint, endPoint, executionType, searchMode, OnPathFound);
     }
 }
 
@@ -56,7 +56,7 @@ public static class PathFollowerUtility {
         Stop(transform);
     }
 
-    internal static void FindShortestPathOfPoints_Internal(PathFinder manager, int startNodeID, int endNodeID, PathLineType pathType, Execution execution, System.Action<List<Vector3>> OnPathFound) {
+    internal static void FindShortestPathOfPoints_Internal(PathFinder manager, int startNodeID, int endNodeID, Execution execution, System.Action<List<Vector3>> OnPathFound) {
         int nearestPointFromStart = startNodeID;
         int nearestPointFromEnd = endNodeID;
 
@@ -76,11 +76,12 @@ public static class PathFollowerUtility {
             List<Vector3> path = null;
 
             if (nodes != null) {
-                foreach (var a in nodes) {
-                    allNodes.Add(a.position);
+                foreach (Node n in nodes) {
+                    allNodes.Add(n.position);
                 }
             }
-            path = (pathType == PathLineType.Straight ? GetStraightPathPoints(allNodes) : GetCatmullRomCurvePathPoints(allNodes));
+            //path = (pathType == PathLineType.Straight ? GetStraightPathPoints(allNodes) : GetCatmullRomCurvePathPoints(allNodes));
+            path = GetStraightPathPoints(allNodes);
 
             OnPathFound(path);
         }
@@ -88,7 +89,7 @@ public static class PathFollowerUtility {
         manager.FindShortestPathOfNodes(nearestPointFromStart, nearestPointFromEnd, execution, onPathOfNodesFound);
     }
 
-    internal static void FindShortestPathOfPoints_Internal(PathFinder manager, Vector3 startPoint, Vector3 endPoint, PathLineType pathType, Execution execution, SearchMode searchMode, System.Action<List<Vector3>> OnPathFound) {
+    internal static void FindShortestPathOfPoints_Internal(PathFinder manager, Vector3 startPoint, Vector3 endPoint, Execution execution, SearchMode searchMode, System.Action<List<Vector3>> OnPathFound) {
         bool makeItMoreAccurate = searchMode == SearchMode.Intermediate || searchMode == SearchMode.Complex;
         int nearestPointFromStart = manager.FindNearestNode(startPoint);
         int nearestPointFromEnd = -1;
@@ -149,7 +150,8 @@ public static class PathFollowerUtility {
             }
             List<Vector3> path = null;
             allNodes.Insert(0, startPoint);
-            path = (pathType == PathLineType.Straight ? GetStraightPathPoints(allNodes) : GetCatmullRomCurvePathPoints(allNodes));
+            //path = (pathType == PathLineType.Straight ? GetStraightPathPoints(allNodes) : GetCatmullRomCurvePathPoints(allNodes));
+            path = GetStraightPathPoints(allNodes);
 
             OnPathFound(path);
         }

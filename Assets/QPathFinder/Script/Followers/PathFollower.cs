@@ -51,8 +51,8 @@ public class PathFollower : MonoBehaviour {
         int end = path.Count;
         float dist, dist1, colo = 0;
         bool endpoint = false;
-        transform.position = path[0].a.position;
-        Vector3 dir = path[0].a.position - path[0].b.position;
+        transform.position = path[0].PosOfA;
+        Vector3 dir = path[0].PosOfA - path[0].PosOfB;
         dir.Normalize();
         while (path[index + 1].CanEnter(BlockType.Open) == false) {
             yield return null;
@@ -62,17 +62,17 @@ public class PathFollower : MonoBehaviour {
         Vector3 target;
         float back;
         Vector3? target2 = null;
-        transform.position = path[index].a.position;
-        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(path[index].b.position - transform.position), 400f);
+        transform.position = path[index].PosOfA;
+        transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(path[index].PosOfB - transform.position), 400f);
         QueuePos = path[index].EnterQueue();
-        dir = path[index].a.position - path[index].b.position;
+        dir = path[index].PosOfA - path[index].PosOfB;
         dir.Normalize();
         float padding = 0.4f;
         back = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
-        target = path[index].b.position + dir * back;
+        target = path[index].PosOfB + dir * back;
         while (index < end) {
             dist = Vector3.Distance(transform.position, target);
-            dist1 = Vector3.Distance(transform.position, path[index].b.position);
+            dist1 = Vector3.Distance(transform.position, path[index].PosOfB);
             float angle = dist1 > 0.2f ? Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target - transform.position)) : Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target2 ?? target - transform.position));
             float tar;
 
@@ -95,10 +95,10 @@ public class PathFollower : MonoBehaviour {
                 if (index + 1 == end) {
                     break;
                 }
-                dir = path[index].a.position - path[index].b.position;
+                dir = path[index].PosOfA - path[index].PosOfB;
                 dir.Normalize();
                 if (index + 1 != end) {
-                    target2 = path[index + 1].b.position;
+                    target2 = path[index + 1].PosOfB;
                 }
                 back = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
             }
@@ -109,7 +109,7 @@ public class PathFollower : MonoBehaviour {
                 back = back > prop ? prop : back;
                 waitingTime += Time.deltaTime;
                 //canEnter, go to centerpoint, endpoint true
-                if (!endpoint && dist1 < 1.3f && path[index].leftQueue == QueuePos && path[index + 1].CanEnter(path[index].priori)) {
+                if (!endpoint && dist1 < 1.3f && path[index].leftQueue == QueuePos && path[index + 1].CanEnter(path[index].priority)) {
                     endpoint = true;
                     path[index].LeaveQueue();
                     QueuePos = path[index + 1].EnterQueue();
@@ -119,7 +119,7 @@ public class PathFollower : MonoBehaviour {
                     back = 0;
                 }
             }
-            target = path[index].b.position + dir * back;
+            target = path[index].PosOfB + dir * back;
             if (dist >= 0.1f) {
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target - transform.position), 100f * Time.deltaTime);
                 transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;

@@ -220,10 +220,10 @@ public class PathFinderEditor : Editor {
                     break;
             }
             if (script.drawPaths && sceneMode != SceneMode.SelectJunction)
-                Handles.DrawLine(pd.a.position, pd.b.position);
+                Handles.DrawLine(pd.PosOfA, pd.PosOfB);
 
             Handles.BeginGUI();
-            Vector3 currNode = (pd.a.position + pd.b.position) / 2;
+            Vector3 currNode = (pd.PosOfA + pd.PosOfB) / 2;
             Vector2 guiPosition = HandleUtility.WorldToGUIPoint(currNode);
             string str = "";
             if (script.showPathId)
@@ -266,8 +266,10 @@ public class PathFinderEditor : Editor {
                 }
                 if (script.showSpawns) {
                     foreach (Path p in j.paths) {
-                        Vector2 guiPosition = HandleUtility.WorldToGUIPoint(p.transform.position);
-                        GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + costGUITextColor + ">" + p.entireQueue.ToString() + "</Color>", richTextStyle);
+                        if (p.transform != null) {
+                            Vector2 guiPosition = HandleUtility.WorldToGUIPoint(p.transform.position);
+                            GUI.Label(new Rect(guiPosition.x - 20, guiPosition.y - 20, 40, 20), "<Color=" + costGUITextColor + ">" + p.entireQueue.ToString() + "</Color>", richTextStyle);
+                        }
                     }
                 }
             }
@@ -288,7 +290,7 @@ public class PathFinderEditor : Editor {
                 Handles.color = colors[i];
                 Vector3 v = new Vector3(0, i * 0.1f, 0);
                 foreach (int j in selectedJunction.phases[i].routes) {
-                    Handles.DrawLine(selectedJunction.paths[j].a.position + v, selectedJunction.paths[j].b.position + v);
+                    Handles.DrawLine(selectedJunction.paths[j].PosOfA + v, selectedJunction.paths[j].PosOfB + v);
                 }
             }
         }
@@ -316,7 +318,6 @@ public class PathFinderEditor : Editor {
         if (Physics.Raycast(ray, out RaycastHit hit, 100000f, backgroundLayerMask)) {
             if (sceneMode == SceneMode.AddJunction) {
                 Vector3 hitPos = hit.point;
-                hitPos += (-ray.direction.normalized) * script.graphData.heightFromTheGround;
                 CreateJunction(hitPos);
             }
             if (sceneMode == SceneMode.AddStreet) {
@@ -383,7 +384,6 @@ public class PathFinderEditor : Editor {
 
         Junction junction = go.AddComponent<Junction>();
         script.graphData.AllJunctions.Add(junction);
-        script.graphData.ReGenerateIDs();
     }
 
     void CreateStreet(Junction a, Junction b) {
@@ -392,24 +392,21 @@ public class PathFinderEditor : Editor {
         Street street = go.AddComponent<Street>();
         street.Init(a, b, ifrom, ito);
         script.graphData.AllStreets.Add(street);
-        script.graphData.ReGenerateIDs();
-        a.AddStreet(street);
-        b.AddStreet(street, 1);
-        script.graphData.ReGenerateIDs();
+        RefreshData();
     }
 
     void DeleteJunction(Junction junction) {
-        foreach (Street s in junction.street) {
-            script.graphData.AllStreets.Remove(s);
+        foreach (Joint jo in junction.joints) {
+            script.graphData.AllStreets.Remove(jo.street);
         }
         script.graphData.AllJunctions.Remove(junction);
         junction.Destroy();
-        script.graphData.ReGenerateIDs();
+        RefreshData();
     }
     void DeleteStreet(Street street) {
         script.graphData.AllStreets.Remove(street);
         street.Destroy();
-        script.graphData.ReGenerateIDs();
+        RefreshData();
     }
 
     void RefreshData() {
@@ -423,12 +420,6 @@ public class PathFinderEditor : Editor {
         script.graphData.ReGenerateIDs();
     }
     void ClearAll() {
-        foreach (Street s in script.graphData.AllStreets) {
-            DestroyImmediate(s.gameObject);
-        }
-        foreach (Junction s in script.graphData.AllJunctions) {
-            DestroyImmediate(s.gameObject);
-        }
         script.graphData.Clear();
     }
 

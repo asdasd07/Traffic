@@ -240,7 +240,7 @@ public class PathFinder : MonoBehaviour {
         int startPointID = fromNodeID;
         int endPointID = toNodeID;
 
-        graphData.ReGenerateIDs();
+        //graphData.ReGenerateIDs();
 
         Node startPoint = graphData.nodes[startPointID];
         Node endPoint = graphData.nodes[endPointID];
