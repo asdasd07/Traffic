@@ -90,7 +90,7 @@ public class PathFinderEditor : Editor {
             EditorGUILayout.EndHorizontal();
         }, "Mode");
 
-        GUILayout.Window(2, new Rect(0, 195f, 70f, 80f), delegate (int windowID) {
+        GUILayout.Window(2, new Rect(0, 195f, 70f, 100f), delegate (int windowID) {
             EditorGUILayout.BeginVertical();
             if (GUILayout.Button("Clear All")) {
                 ClearAll();
@@ -98,6 +98,8 @@ public class PathFinderEditor : Editor {
             if (GUILayout.Button("Refresh Data")) {
                 RefreshData();
             }
+            script.TimeScale=(int)GUILayout.HorizontalSlider(script.TimeScale, 1, 5);
+            GUI.Label(new Rect(10, 75, 80, 20), "Time Scale "+ script.TimeScale);
             EditorGUILayout.EndVertical();
         }, "");
 

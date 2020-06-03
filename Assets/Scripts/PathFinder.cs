@@ -14,6 +14,8 @@ public enum Execution {
 public class PathFinder : MonoBehaviour {
     private static PathFinder _instance;////usunąc?
     public static PathFinder Instance => _instance;
+
+
     /// <summary>
     /// Przechowuje listę stworzonych pojazdów
     /// </summary>
@@ -67,6 +69,14 @@ public class PathFinder : MonoBehaviour {
     public bool showNodeId = false;
     public bool showPathId = false;
     public bool showCosts = false;
+    int timeScale=1;
+    public int TimeScale {
+        get => timeScale;
+        set {
+            timeScale = value;
+            Time.timeScale = timeScale;
+        }
+    }
     /// <summary>
     /// Przechowuje dane grafu 
     /// </summary>
@@ -131,7 +141,7 @@ public class PathFinder : MonoBehaviour {
             if (spawnType == 0) {//incoming
                 targetType = Random.Range(0, 2);
                 targetType = targetType == 0 ? 1 : 4;
-                targetType = spawns[targetType].Count == 0 ? targetType == 1 ? 5 : 1 : targetType;
+                targetType = spawns[targetType].Count == 0 ? targetType == 1 ? 4 : 1 : targetType;
                 if (spawns[targetType].Count == 0) break;
             } else {//house
                 targetType = Random.Range(0, 3);

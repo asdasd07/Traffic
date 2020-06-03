@@ -86,17 +86,6 @@ public class PathFollower : MonoBehaviour {
             float angle = dist1 > 0.2f ? Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target - transform.position)) : Quaternion.Angle(transform.rotation, Quaternion.LookRotation(target2 ?? target - transform.position));
             float tar;
 
-            if (dist < 0.5f && !endpoint) {
-                tar = 0.1f;
-            } else {
-                //y = 0.992881 + 0.18181*x - 0.4129524*x^2 + 0.4111319*x^3
-                tar = 1f + 0.2f * dist - 0.4f * Mathf.Pow(dist, 2) + 0.4f * Mathf.Pow(dist, 3);
-                tar = tar > 3 ? 3 : tar;
-            }
-            if (dist >= 0.4f) {
-                tar = angle < 3 ? tar : tar / (angle / 3);
-            }
-            velocity = Mathf.SmoothDamp(velocity, tar, ref colo, 0.3f);
 
             //centerpoint reached, index++, endpoint false
             if (endpoint && dist1 < padding) {
@@ -110,12 +99,11 @@ public class PathFollower : MonoBehaviour {
                 if (index + 1 != end) {
                     target2 = path[index + 1].PosOfB;
                 }
-                back = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
+                back = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + padding) : padding;
             }
-
             //midpoint reached, recalculate next midpoint
             if (dist < 0.5f) {
-                float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + 1f) : padding;
+                float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + padding) : padding;
                 back = back > prop ? prop : back;
                 waitingTime += Time.deltaTime;
                 //canEnter, go to centerpoint, endpoint true
@@ -129,7 +117,18 @@ public class PathFollower : MonoBehaviour {
                     back = 0;
                 }
             }
+            if (dist < 0.5f && !endpoint) {
+                tar = 0.1f;
+            } else {
+                tar = 1f + 0.2f * dist - 0.4f * Mathf.Pow(dist, 2) + 0.4f * Mathf.Pow(dist, 3);
+                tar = tar > 3 ? 3 : tar;
+            }
+            if (dist >= 0.4f) {
+                tar = angle < 3 ? tar : tar / (angle / 3);
+            }
             target = path[index].PosOfB + dir * back;
+            //yield return new WaitForFixedUpdate();
+            velocity = Mathf.SmoothDamp(velocity, tar, ref colo, 0.3f);
             if (dist >= 0.1f) {
                 transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(target - transform.position), 100f * Time.deltaTime);
                 transform.position = transform.position + transform.forward * velocity * Time.deltaTime * 1;
