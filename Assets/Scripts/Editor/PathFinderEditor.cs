@@ -98,8 +98,8 @@ public class PathFinderEditor : Editor {
             if (GUILayout.Button("Refresh Data")) {
                 RefreshData();
             }
-            script.TimeScale=(int)GUILayout.HorizontalSlider(script.TimeScale, 1, 5);
-            GUI.Label(new Rect(10, 75, 80, 20), "Time Scale "+ script.TimeScale);
+            script.TimeScale = (int)GUILayout.HorizontalSlider(script.TimeScale, 1, 5);
+            GUI.Label(new Rect(10, 75, 80, 20), "Time Scale " + script.TimeScale);
             EditorGUILayout.EndVertical();
         }, "");
 
@@ -305,7 +305,7 @@ public class PathFinderEditor : Editor {
 
         if (sceneMode == SceneMode.SelectJunction && selectedJunction != null && selectedJunction.Rondo == false) {
             Color[] colors = new Color[4] { Color.red, Color.green, Color.blue, Color.yellow };
-            if (selectedJunction.phases!=null) {
+            if (selectedJunction.phases != null) {
                 for (int i = 0; i < selectedJunction.phases.Length; i++) {
                     Handles.color = colors[i];
                     Vector3 v = new Vector3(0, i * 0.1f, 0);
@@ -340,7 +340,17 @@ public class PathFinderEditor : Editor {
         if (Physics.Raycast(ray, out RaycastHit hit, 100000f, backgroundLayerMask)) {
             if (sceneMode == SceneMode.AddJunction) {
                 Vector3 hitPos = hit.point;
-                CreateJunction(hitPos);
+                var junction = CreateJunction(hitPos);
+                if (hit.transform.parent && hit.transform.parent.name == "Street") {
+                    var street = hit.transform.parent.GetComponent<Street>();
+                    var fr = street.from;
+                    var to = street.to;
+                    ifrom = street.iFrom;
+                    ito = street.iTo;
+                    DeleteStreet(street);
+                    CreateStreet(fr, junction);
+                    CreateStreet(junction, to);
+                }
             }
             if (sceneMode == SceneMode.AddStreet) {
                 if (previous == null) {
@@ -400,8 +410,9 @@ public class PathFinderEditor : Editor {
     /// Metoda odpowiada za stworzenie skrzy¿owania
     /// </summary>
     /// <param name="position">Pozycja tworzonego skrzy¿owania</param>
-    void CreateJunction(Vector3 position) {
+    Junction CreateJunction(Vector3 position) {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.GetComponent<CapsuleCollider>().radius = 2f;
         go.name = "Junction";
         go.transform.localScale = new Vector3(1, 0.1f, 1);
         go.transform.position = position;
@@ -410,6 +421,7 @@ public class PathFinderEditor : Editor {
 
         Junction junction = go.AddComponent<Junction>();
         script.graphData.allJunctions.Add(junction);
+        return junction;
     }
     /// <summary>
     /// Metoda odpowiada za stworzenie ulicy

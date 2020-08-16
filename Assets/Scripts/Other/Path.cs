@@ -150,6 +150,7 @@ public class Path {
         a = A; b = B;
         if (this.hide < HidePath.Hiden) {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.GetComponent<BoxCollider>().size = new Vector3(1.4f, 1f, 1f);
             transform = go.transform;
             transform.parent = Parent;
             go.GetComponent<Renderer>().material = Resources.Load<Material>("street") as Material;
@@ -161,8 +162,9 @@ public class Path {
     /// </summary>
     public void Visualize() {
         cost = hide == HidePath.Shown ? Vector3.Distance(PosOfA, PosOfB) : 0;
-        maxInQueue = (int)Mathf.Floor(cost - 0.5f);
-        maxInQueue = maxInQueue < 1 ? 1 : maxInQueue;
+        maxInQueue = (int)Mathf.Floor(Vector3.Distance(PosOfA, PosOfB) - 0.5f);
+        maxInQueue = maxInQueue < 1 ? 1 :  maxInQueue;
+        maxInQueue = hide != HidePath.Shown && maxInQueue > 2 ? 2 : maxInQueue;
         if (transform != null) {
             transform.position = (PosOfA + PosOfB) / 2f;
             transform.LookAt(PosOfB);

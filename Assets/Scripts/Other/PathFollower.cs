@@ -65,7 +65,7 @@ public class PathFollower : MonoBehaviour {
         Vector3 dir = path[0].PosOfA - path[0].PosOfB;
         dir.Normalize();
         while (path[index + 1].CanEnter(BlockType.Open) == false) {
-            yield return null;
+            yield return new WaitForSeconds(0.2f);
         }
         mesh.enabled = true;
         index++;
@@ -94,6 +94,7 @@ public class PathFollower : MonoBehaviour {
                 if (index + 1 == end) {
                     break;
                 }
+                dist1 = Vector3.Distance(transform.position, path[index].PosOfB);
                 dir = path[index].PosOfA - path[index].PosOfB;
                 dir.Normalize();
                 if (index + 1 != end) {
@@ -105,7 +106,6 @@ public class PathFollower : MonoBehaviour {
             if (dist < 0.5f) {
                 float prop = path[index].maxInQueue > 1 ? (QueuePos - path[index].leftQueue + padding) : padding;
                 back = back > prop ? prop : back;
-                waitingTime += Time.deltaTime;
                 //canEnter, go to centerpoint, endpoint true
                 if (!endpoint && dist1 < 1.3f && path[index].leftQueue == QueuePos && path[index + 1].CanEnter(path[index].priority)) {
                     endpoint = true;
@@ -113,13 +113,15 @@ public class PathFollower : MonoBehaviour {
                     QueuePos = path[index + 1].EnterQueue();
                     waitingTime = 0;
                     //back = path[index].maxInQueue > 1 ? (QueuePos - path[index].sQueue + 1f) : padding;
-                    dist = Vector3.Distance(transform.position, target);
+                    //dist = Vector3.Distance(transform.position, target);
+                    dist = dist1;
                     back = 0;
                 }
             }
-            if (dist < 0.5f && !endpoint) {
+            if (!endpoint && dist < 0.5f) {
+                waitingTime += Time.deltaTime;
                 tar = 0.1f;
-            } else {
+            } else {//endpoint || dist >= 0.5f
                 tar = 1f + 0.2f * dist - 0.4f * Mathf.Pow(dist, 2) + 0.4f * Mathf.Pow(dist, 3);
                 tar = tar > 3 ? 3 : tar;
             }

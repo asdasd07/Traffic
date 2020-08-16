@@ -294,6 +294,9 @@ public class Junction : MonoBehaviour {
         if (joints.Count > 4) {
             rondo = true;
         }
+        if (joints.Count < 3) {
+            rondo = false;
+        }
         if (Rondo) {
             List<Node> circle = new List<Node>();
             for (int i = 0; i < joints.Count; i++) {
