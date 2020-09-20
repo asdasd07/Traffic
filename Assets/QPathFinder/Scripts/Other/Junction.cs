@@ -5,30 +5,30 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// Faza skrzyżowania
+/// Phase of junction
 /// </summary>
-/// Decyduje które ścieżki są przejezdne w danym czasie.
+/// It decides which paths are passable at any given time
 [System.Serializable]
 public class Phase {
     /// <summary>
-    /// Przechowuje listę ścieżek, należące do fazy
+    /// Store list of paths belonging to phase
     /// </summary>
     public List<int> routes = new List<int>();
     /// <summary>
-    /// Przechowuje listę par, określających ulice i ścieżkę, z których nadjeżdżają pojazdy
+    /// Store list of pairs defining the streets and path from which traffic is coming
     /// </summary>
     public List<Vector2Int> streetsPaths = new List<Vector2Int>();
     /// <summary>
-    /// Przechowuje czas, jaki czekały pojazdy do czasu otwarcia ścieżek
+    /// Store the time that vehicles wait for opening paths of this phase
     /// </summary>
     public float queueTime = 5f;
 
     /// <summary>
-    /// Konstruktor
+    /// Construktor
     /// </summary>
-    /// <param name="dictionary">Słownik zawierający numery ścieżek i kody skrętu</param>
-    /// <param name="mode">Modyfikator skrzyżowania</param>
-    /// <param name="i">Numer fazy, która ma być stworzona</param>
+    /// <param name="dictionary">Dictionary of track numbers and turn codes</param>
+    /// <param name="mode">Junction modifier</param>
+    /// <param name="i">Phase number that will be created</param>
     public Phase(Dictionary<int, string> dictionary, int mode, int i) {
         if (mode == 5) {
             switch (i) {
@@ -43,30 +43,6 @@ public class Phase {
                     break;
             }
         } else {
-            #region coment
-            //if (mode % 2 == 0) {//faza I1
-            //    //0
-            //    Routes = (from x in dic where x.Value == "32" || x.Value == "00" || x.Value == "01" || x.Value == "02" select x.Key).ToList();
-            //    //2
-            //    Routes = (from x in dic where x.Value == "12" || x.Value == "20" || x.Value == "21" || x.Value == "22" select x.Key).ToList();
-            //} else {//faza II1
-            //    Routes = (from x in dic where x.Value == "32" || x.Value == "12" || x.Value == "00" || x.Value == "20" select x.Key).ToList();
-            //    //0
-            //    Routes = (from x in dic where x.Value == "21" || x.Value == "22" || x.Value == "01" || x.Value == "02" select x.Key).ToList();
-            //    //2
-            //}
-            //if (mode < 2) {//faza I2
-            //    //1
-            //    Routes = (from x in dic where x.Value == "02" || x.Value == "10" || x.Value == "11" || x.Value == "12" select x.Key).ToList();
-            //    //3
-            //    Routes = (from x in dic where x.Value == "22" || x.Value == "30" || x.Value == "31" || x.Value == "32" select x.Key).ToList();
-            //} else {//faza II2
-            //    Routes = (from x in dic where x.Value == "02" || x.Value == "22" || x.Value == "10" || x.Value == "30" select x.Key).ToList();
-            //    //1
-            //    Routes = (from x in dic where x.Value == "11" || x.Value == "12" || x.Value == "31" || x.Value == "32" select x.Key).ToList();
-            //    //3
-            //} 
-            #endregion
             switch (i) {
                 case 0:
                     if (mode % 2 == 0) {
@@ -106,52 +82,52 @@ public class Phase {
 }
 
 /// <summary>
-/// Skrzyżowanie
+/// Junction
 /// </summary>
-/// Obiekt łączący ulice skrzyżowaniem świetlnym lub skrzyżowaniem o ruchu okrężnym
+/// Object connecting streets with a traffic light or roundabout
 [System.Serializable]
 public class Junction : MonoBehaviour {
     /// <summary>
-    /// Przechowuje listę przyłącz
+    /// List of joints
     /// </summary>
     public List<Joint> joints = new List<Joint>();
     /// <summary>
-    /// Przechowuje listę ścieżek stworzonych przez skrzyżowanie
+    /// Store paths created by junction
     /// </summary>
     public List<Path> paths = new List<Path>();
     /// <summary>
-    /// Przechowuje tablice faz skrzyżowania
+    /// Stores an array of phases of this junction
     /// </summary>
     public Phase[] phases;
     /// <summary>
-    /// Przechowuje czas do zmiany fazy skrzyżowania
+    /// Stores the time until the junction phase changes
     /// </summary>
     public float timeToPhase = 0f;
     /// <summary>
-    /// Przechowuje wartość odstępu, jaki powinny zachować przyłącza
+    /// Stores margin of distance between joint and junction
     /// </summary>
     public float margin = 0;
     /// <summary>
-    /// Przechowuje czas, jaki powinien zająć pełny cykl faz skrzyżowania
+    /// Store time of full cycle of junction phases
     /// </summary>
     public float cycleTime = 20f;
     /// <summary>
-    /// Przechowuje tablice czasów trwania każdej fazy
+    /// Stores an array of duration of each phase
     /// </summary>
     [SerializeField] public float[] timers;
     [SerializeField] bool rondo = false;
     /// <summary>
-    /// Określa czy skrzyżowanie ma obliczać czas trwania faz
+    /// Is junction should calculate duration of phases
     /// </summary>
     public bool timersCalc = true;
     [HideInInspector] public bool globalTimersCalc = true;
     /// <summary>
-    /// Przechowuje numer aktualnie wykonywanej fazy skrzyżowania
+    /// Number of current running phase
     /// </summary>
     int phase = 0;
 
     /// <summary>
-    /// Określa, czy skrzyżowanie jest rondem 
+    /// Mark is this junction is roundabout
     /// </summary>
     public bool Rondo {
         get => rondo;
@@ -167,7 +143,7 @@ public class Junction : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Metoda uruchamiana przy rozpoczęciu symulacji. Decyduje czy skrzyżowanie będzie działać jako skrzyżowanie świetlne czy rondo.
+    /// The method that is run when the simulation starts. Decides whether the intersection will act as a traffic light or a roundabout.
     /// </summary>
     void Start() {
         if (Rondo) {
@@ -179,7 +155,7 @@ public class Junction : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Rutyna, która odpowiada za działanie skrzyżowania świetlnego
+    /// Routine that is responsible for the operation of the light intersection
     /// </summary>
     IEnumerator PhaseChanger() {
         while (true) {
@@ -223,7 +199,7 @@ public class Junction : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Rutyna, która odpowiada za działanie ronda
+    /// Routine that is responsible for the operation of the roundabout
     /// </summary>
     IEnumerator RondoRutine() {
         while (true) {
@@ -239,9 +215,9 @@ public class Junction : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Metoda określa czy skrzyżowanie jest opuszczone
+    /// The method determines whether the intersection is abandoned
     /// </summary>
-    /// <returns>Prawda, jeżeli ścieżki skrzyżowania są puste</returns>
+    /// <returns>True if all paths all ababdoned</returns>
     bool IsFree() {
         foreach (Path p in paths) {
             if (p.CurrentQueue != 0) {
@@ -251,16 +227,16 @@ public class Junction : MonoBehaviour {
         return true;
     }
     /// <summary>
-    /// Metoda odpowiada za dodanie nowego przyłącza
+    /// The method is responsible for adding a new joint
     /// </summary>
-    /// <param name="joint">Przyłącze dodawanej ulicy</param>
+    /// <param name="joint">Joint of street</param>
     public void AddJoint(Joint joint) {
         joints.Add(joint);
     }
     /// <summary>
-    /// Metoda odpowiada za usunięcie przyłącza ze skrzyżowania
+    /// The method is responsible for removing a new joint
     /// </summary>
-    /// <param name="street">Ulica, której przyłącze jest częścią</param>
+    /// <param name="street">Street with joint is part of</param>
     public void RemoveJoint(Street street) {
         joints.RemoveAll(item => item.street == street);
         foreach (Joint jo in joints) {
@@ -269,7 +245,7 @@ public class Junction : MonoBehaviour {
         Calculate();
     }
     /// <summary>
-    /// Metoda odpowiada za stworzenie ścieżek między przyłączami i dodanie ich do faz skrzyżowania
+    /// The method creates paths between joints and adds them to the junction phases
     /// </summary>
     public void Calculate() {
         int maxInputOutput = 0;
@@ -414,11 +390,11 @@ public class Junction : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Tworzy ścieżki z jednego przyłącza do reszty
+    /// Creates paths from one joint to others
     /// </summary>
-    /// <param name="curentIndex">Indeks ulicy, z której wjeżdżają pojazdy</param>
-    /// <param name="individual">Określa czy ulica będzie w fazie indywidualnej</param>
-    /// <returns>Trzyelementową tablicę list ścieżek wychodzących z przyłącza. Są to listy ścieżek prowadzących na lewo, na przód i na prawo</returns>
+    /// <param name="curentIndex">Index of the street from which the vehicles are entering</param>
+    /// <param name="individual">Determines whether the street will be in the individual phase</param>
+    /// <returns>A three-element array of path lists coming out of the joint. These are lists of paths to the left, front, and right</returns>
     List<Path>[] StreetWays(int curentIndex, bool individual = false) {
         int[] wayCounter = new int[3] { 0, 0, 0 };//R S L
         List<Path>[] streetWays = new List<Path>[3];//L S R
@@ -498,7 +474,7 @@ public class Junction : MonoBehaviour {
     
     }
     /// <summary>
-    /// Metoda odpowiada za sortowanie listy przyłącz, kierunku odwrotnym do wskazówek zegara względem skrzyżowania
+    /// The method is responsible for sorting the join list, counterclockwise to the junction
     /// </summary>
     private void SortStreets() {
         if (joints.Count < 1) {
@@ -540,7 +516,7 @@ public class Junction : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Metoda odpowiada za zniszczenie obiektu i przyłączonych ulic
+    /// The method is responsible for the destruction of object and attached streets
     /// </summary>
     public void Destroy() {
         foreach (Joint jo in joints) {
@@ -551,7 +527,7 @@ public class Junction : MonoBehaviour {
         DestroyImmediate(gameObject);
     }
     /// <summary>
-    /// Metoda odpowiada za usunięcie posiadanych ścieżek
+    /// The method is responsible for removing owned paths
     /// </summary>
     void Clear() {
         foreach (Path p in paths) {
@@ -562,9 +538,9 @@ public class Junction : MonoBehaviour {
         paths.Clear();
     }
     /// <summary>
-    /// Metoda odpowiada za podświetlenie skrzyżowania jako zaznaczonego
+    /// The method is responsible for highlighting the junction as marked
     /// </summary>
-    /// <param name="light">Prawda jeżeli zaznaczone</param>
+    /// <param name="light">true if highlighting</param>
     public void Select(bool light = true) {
         MeshRenderer mats = GetComponent<MeshRenderer>();
         Material mat = new Material(source: GetComponent<MeshRenderer>().sharedMaterial);

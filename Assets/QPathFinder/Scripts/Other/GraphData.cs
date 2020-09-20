@@ -7,40 +7,39 @@ using UnityEditor;
 using System;
 
 /// QPathFinder modified
-/// A collection of Nodes and Paths ( Connections ).
 /// <summary>
-/// Dane grafu. Przechowuje dane o wierzchołkach, ścieżkach i obiektach z nimi związanych
+/// A collection of nodes, paths and objects link to them
 /// </summary>
 [System.Serializable]
 public class GraphData {
     /// <summary>
-    /// Przechowuje listę wszystkich ulic
+    /// List of all streets
     /// </summary>
     [HideInInspector] public List<Street> allStreets = new List<Street>();
     /// <summary>
-    /// Przechowuje listę wszystkich skrzyżowań
+    /// List of all junctions
     /// </summary>
     [HideInInspector] public List<Junction> allJunctions = new List<Junction>();
 
     /// <summary>
-    /// Przechowuje listę wszystkich wierzchołków
+    /// List of all nodes
     /// </summary>
     [HideInInspector] public List<Node> nodes = new List<Node>();
     /// <summary>
-    /// Przechowuje listę wierzchołków będących środkami ulic
+    /// List of center nodes
     /// </summary>
     [HideInInspector] public List<Node> centers = new List<Node>();
     /// <summary>
-    /// Przechowuje listę wszystkich ścieżek
+    /// List of all paths
     /// </summary>
     [HideInInspector] public List<Path> paths = new List<Path>();
     /// <summary>
-    /// Przechowuje słownik określający identyfikator ścieżki, po parze identyfikatorów wierzchołków
+    /// Dictionary of path ID by pair of Nodes ID
     /// </summary>
     [HideInInspector] public Dictionary<Vector2Int, int> pathsByNodes = new Dictionary<Vector2Int, int>();
 
     /// <summary>
-    /// Struktura używana do zapisu danych w trybie symulacji i wczytywania ich w trybie edycji
+    /// Structure used to save data between play and edit mode
     /// </summary>
     [Serializable] struct SavingStructure {
         public float[][] Timers;
@@ -49,7 +48,7 @@ public class GraphData {
 
 
     /// <summary>
-    /// Metoda gromadzi zmienne do struktury i zapisuje ją do pliku
+    /// Method gather data to structure and save it to file
     /// </summary>
     public void SaveTimers() {
         string destination = Application.persistentDataPath + "/save.dat";
@@ -78,7 +77,7 @@ public class GraphData {
         Debug.Log("File saved");
     }
     /// <summary>
-    /// Metoda wczytuje strukturę z pliku i odpowiednio wypełnia nimi obiekty
+    /// Method load file and fill certain objects
     /// </summary>
     public void LoadTimers() {
         string destination = Application.persistentDataPath + "/save.dat";
@@ -115,17 +114,17 @@ public class GraphData {
     }
 
     /// <summary>
-    /// Metoda zwraca ścieżkę łączącą wierzchołki "od" i "do"
+    /// Method returns path that connect node "from "to"
     /// </summary>
-    /// <param name="from">Wierzchołek "od"</param>
-    /// <param name="to">Wierzchołek "do"</param>
-    /// <returns>Ścieżka łącząca dwa wierzchołki</returns>
+    /// <param name="from">node "from"</param>
+    /// <param name="to">node "to"</param>
+    /// <returns>Path that connect nodes</returns>
     public Path GetPathBetween(Node from, Node to) {
         return GetPathBetween(from.ID, to.ID);
     }
 
     /// <summary>
-    /// Metoda usuwa wszystkie skrzyżowania i ulice
+    /// Metod delete all junctions and streets
     /// </summary>
     public void Clear() {
         foreach (Junction s in allJunctions) {
@@ -139,8 +138,8 @@ public class GraphData {
 
     /// QPathFinder modified
     /// <summary>
-    /// Metoda odpowiada za przyporządkowanie identyfikatorów wierzchołkom i ścieżkom 
-    /// oraz za stworzenie słownika przyporządkowującemu parzę identyfikatorów wierzchołków, identyfikator ścieżki 
+    /// The method is responsible for assigning identifiers to nodes and paths
+    /// and creating a dictionary mapping a pair of node IDs, ID of path 
     /// </summary>
     public void ReGenerateIDs() {
         nodes.Clear();

@@ -3,28 +3,28 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Przyłącze. Część ulicy połączona ze skrzyżowaniem
+/// Part of the street connected to the intersection
 /// </summary>
 [System.Serializable]
 public class Joint {
     /// <summary>
-    /// Przechowuje referencje do ulicy, której jest częścią
+    /// Stores references to the street of which it is part
     /// </summary>
     public Street street;
     /// <summary>
-    /// Przechowuje listę wierzchołków ścieżek wjeżdżających do skrzyżowania
+    /// Stores a list of nodes of paths entering an intersection
     /// </summary>
     public List<Node> input = new List<Node>();
     /// <summary>
-    /// Przechowuje listę wierzchołków ścieżek wyjeżdżających ze skrzyżowania
+    /// Stores a list of vertices of paths exiting from an junction
     /// </summary>
     public List<Node> output = new List<Node>();
     /// <summary>
-    /// Przechowuje znormalizowany wektor od środka do przyłącza ścieżki
+    /// Stores the normalized vector from the center to the path junction
     /// </summary>
     public Vector3 outsideVec;
     /// <summary>
-    /// Zwraca przybliżoną pozycje przyłącza 
+    /// Returns the approximate position of the joint
     /// </summary>
     public Vector3 Position {
         get {
@@ -42,10 +42,10 @@ public class Joint {
         }
     }
     /// <summary>
-    /// Konstruktor
+    /// Construktor
     /// </summary>
-    /// <param name="Street">Ulica do której należy</param>
-    /// <param name="Type">Typ przyłącza. Prawda jeżeli przyłącze "do", fałsz jeżeli przyłącze "od"</param>
+    /// <param name="Street">Street to which it belongs</param>
+    /// <param name="Type">Connection type. True if junction "to", False if junction "from"</param>
     public Joint(Street Street, bool Type) {
         street = Street;
         outsideVec = (Street.to.transform.position - Street.from.transform.position).normalized;
@@ -54,60 +54,60 @@ public class Joint {
 }
 
 /// <summary>
-/// Ulica
+/// Street
 /// </summary>
 [System.Serializable]
 public class Street : MonoBehaviour {
     /// <summary>
-    /// Przechowuje referencje do skrzyżowania "od"
+    /// Store references to the "from" intersection
     /// </summary>
     [HideInInspector] public Junction from;
     /// <summary>
-    /// Przechowuje referencje do skrzyżowania "do"
+    /// Store references to the "to" intersection
     /// </summary>
     [HideInInspector] public Junction to;
     /// <summary>
-    /// Przechowuje pozycje 
+    /// Stores position
     /// </summary>
     Vector3 fromBorder;
     Vector3 toBorder;
     /// <summary>
-    /// Przechowuje nazwę ulicy
+    /// Stores the street name
     /// </summary>
     public string Name = "";
     /// <summary>
-    /// Przechowuje listę ścieżek
+    /// Store list of paths
     /// </summary>
     public List<Path> paths = new List<Path>();
     /// <summary>
-    /// Przechowuje listę wierzchołków
+    /// Store list of nodes
     /// </summary>
     public List<Node> nodes = new List<Node>();
     /// <summary>
-    /// Przechowuje środkowy wierzchołek
+    /// Holds the middle node
     /// </summary>
     public Node center;
     /// <summary>
-    /// Przechowuje ilość ścieżek prowadzących "od-do"
+    /// Stores the number of paths "from-to"
     /// </summary>
     [HideInInspector] public int iFrom = 2;
     /// <summary>
-    /// Przechowuje ilość ścieżek prowadzących "do-od"
+    /// Stores the number of paths "to-from"
     /// </summary>
     [HideInInspector] public int iTo = 2;
     /// <summary>
-    /// Przechowuje ile samochodów danego rodzaju przyjeżdża lub wyjeżdża z tej ulicy
-    /// Jest to tablica przechowująca 5 rodzajów: przyjezdnych, mieszkańców, miejsc handlowych, miejsc pracy, wyjeżdżających
+    /// It stores how many vehicles of a given type enter or leave this street
+    /// It is an array that stores 5 types: visitors, residents, commercial places, workplaces, and people leaving
     /// </summary>
-    [HideInInspector] public int[] spawns = new int[5] { 0, 0, 0, 0, 0 };//przyjazd/dom/sklep/praca/wyjazd
+    [HideInInspector] public int[] spawns = new int[5] { 0, 0, 0, 0, 0 };//arrival / home / shop / work / departure
 
     /// <summary>
-    /// Metoda odpowiada za zainicjowanie ulicy
+    /// The method is responsible for initiating the street
     /// </summary>
-    /// <param name="From">Skrzyżowanie "od"</param>
-    /// <param name="To">Skrzyżowanie "do"</param>
-    /// <param name="fromCount">Ilość ścieżek "od-do"</param>
-    /// <param name="toCount">Ilość ścieżek "do-od"</param>
+    /// <param name="From">Junction "from"</param>
+    /// <param name="To">Junction "to"</param>
+    /// <param name="fromCount">Number of paths "from-to"</param>
+    /// <param name="toCount">Number of paths "to-from"</param>
     public void Init(Junction From, Junction To, int fromCount = 1, int toCount = 1) {
         iFrom = fromCount; iTo = toCount;
         this.from = From; this.to = To;
@@ -119,9 +119,9 @@ public class Street : MonoBehaviour {
         Calculate();
     }
     /// <summary>
-    /// Metoda odpowiada za zniszczenie obiektu
+    /// The method is responsible for destroying the object
     /// </summary>
-    /// <param name="spare">Skrzyżowanie, które ma zachować referencje do ulicy</param>
+    /// <param name="spare">Junction that keep references to the street</param>
     public void Destroy(Junction spare = null) {
         if (from != spare) {
             from.RemoveJoint(this);
@@ -133,7 +133,7 @@ public class Street : MonoBehaviour {
         DestroyImmediate(gameObject);
     }
     /// <summary>
-    /// Metoda odpowiada za usunięcie posiadanych ścieżek i wierzchołków
+    /// The method is responsible for removing owned paths and node
     /// </summary>
     void Clear() {
         foreach (Path p in paths) {
@@ -146,7 +146,7 @@ public class Street : MonoBehaviour {
         nodes.Add(center);
     }
     /// <summary>
-    /// Metoda odpowiada za zmianę długości ścieżek
+    /// The method is responsible for changing the length of the paths
     /// </summary>
     public void Resize() {
         Vector3 norm = (to.transform.position - from.transform.position).normalized;
@@ -173,10 +173,10 @@ public class Street : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Metoda wylicza wektor, według którego będą kończyły się ścieżki doprowadzone do skrzyżowania
+    /// The method calculates the vector by which the paths leading to the junction will end
     /// </summary>
-    /// <param name="j">Skrzyżowanie, którego wektor będzie dotyczył</param>
-    /// <returns>Przeskalowany wektor prostopadły do innych ulic skrzyżowania</returns>
+    /// <param name="j">The junction the vector will apply to</param>
+    /// <returns>Scaled vector perpendicular to other junction streets</returns>
     Vector3 Perpendic(Junction j) {
         Vector3 perpendic = new Vector3(-(toBorder.z - fromBorder.z), 0, toBorder.x - fromBorder.x).normalized;
         int index = j.joints.FindIndex(item => item.street == this);
@@ -208,14 +208,14 @@ public class Street : MonoBehaviour {
     }
 
     /// <summary>
-    /// Metoda odpowiada za przeliczenie przyłączonych skrzyżowań
+    /// The method is responsible for calculating the connected junction
     /// </summary>
     public void RecalcJunction() {
         from.Calculate();
         to.Calculate();
     }
     /// <summary>
-    /// Metoda odpowiada za stworzenie wcześniej ustalonej ilości ścieżek
+    /// The method is responsible for creating a predetermined number of paths
     /// </summary>
     public void Calculate() {
         Vector3 norm = (to.transform.position - from.transform.position).normalized;
@@ -276,9 +276,9 @@ public class Street : MonoBehaviour {
         jointTo.output = nod3;
     }
     /// <summary>
-    /// Metoda odpowiada za podświetlenie ulicy jako zaznaczonej
+    /// The method is responsible for highlighting the street as marked
     /// </summary>
-    /// <param name="light">Prawda jeżeli zaznaczone</param>
+    /// <param name="light">True if highlight</param>
     public void Select(bool light = true) {
         List<MeshRenderer> mats = new List<MeshRenderer>();
         Material mat = new Material(source: paths.Find(p => p.transform != null).transform.GetComponent<MeshRenderer>().sharedMaterial);

@@ -8,9 +8,8 @@ public enum Execution {
     Asynchronously
 }
 /// QPathFinder modified
-/// PathFinder instance uses GraphData to find the shorted path between Nodes
 /// <summary>
-/// Klasa odpowiada za tworzenie pojazdów i znajdywanie najkrótszej trasy
+/// The class is responsible for creating vehicles and finding the shortest route
 /// </summary>
 public class PathFinder : MonoBehaviour {
     private static PathFinder _instance;////usunąc?
@@ -18,52 +17,52 @@ public class PathFinder : MonoBehaviour {
 
 
     /// <summary>
-    /// Przechowuje listę stworzonych pojazdów
+    /// Stores a list of created vehicles
     /// </summary>
     List<Transform> cars = new List<Transform>();
     Transform carsBox;
     /// <summary>
-    /// Przechowuje aktualną ilość pojazdów
+    /// Stores the current number of vehicles
     /// </summary>
     public int amount = 0;
     /// <summary>
-    /// Przechowuje maksymalną ilość pojazdów
+    /// Stores the maximum number of vehicles
     /// </summary>
     public int maxCars = 100;
     /// <summary>
-    /// Przechowuje częstotliwość tworzenia pojazdów
+    /// Stores how often vehicles are created
     /// </summary>
     public float spawnFrequency = 0.1f;
     /// <summary>
-    /// Przechowuje wielkość czasu jaką pojazdy spędzają w miejscu pracy 
+    /// Stores the amount of time vehicles spend at the workplace
     /// </summary>
     public float workDelay = 5f;
     /// <summary>
-    /// Przechowuje wielkość czasu jaką pojazdy spędzają w miejscu handlowym 
+    /// Stores the amount of time vehicles spend in a trading place
     /// </summary>
     public float shopingDelay = 1f;
     /// <summary>
-    /// Określa czy pojazdy będą tworzone z losowych ulic do losowych celów, czy zgodnie z harmonogramem
+    /// Determines whether vehicles will be created from random streets for random purposes or according to a schedule
     /// </summary>
     public bool randomSpawn = false;
     /// <summary>
-    /// Określa czy obiekt ma tworzyć pojazdy
+    /// Specifies whether the object is to create vehicles
     /// </summary>
     public bool spawning = true;
     /// <summary>
-    /// Określa czy obiekt ma zapisywać dane na koniec symulacji
+    /// Determines whether the object should save data at the end of the simulation
     /// </summary>
     public bool save = true;
     /// <summary>
-    /// Określa czy skrzyżowania mają obliczać czas trwania poszczególnych faz
+    /// Specifies whether intersections should calculate the duration of each phase
     /// </summary>
     public bool calculateTimers = true;
     /// <summary>
-    /// Określa czy wyświetlać linie ścieżek
+    /// Specifies whether to display path lines
     /// </summary>
     public bool drawPaths = true;
     /// <summary>
-    /// Określa czy pokazywać informacje o punktach tworzenia pojazdów
+    /// Specifies whether to show information about vehicle creation points
     /// </summary>
     public bool showSpawns = true;
     public bool countPassings = true;
@@ -72,7 +71,7 @@ public class PathFinder : MonoBehaviour {
     public bool showCosts = false;
     int timeScale = 1;
     /// <summary>
-    /// Określa tempo prowadzonej symulacji
+    /// Defines the pace of the simulation
     /// </summary>
     public int TimeScale {
         get => timeScale;
@@ -82,13 +81,13 @@ public class PathFinder : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Przechowuje dane grafu 
+    /// Stores the graph data
     /// </summary>
     [HideInInspector] public GraphData graphData = new GraphData();
 
     /// QPathFinder
     /// <summary>
-    /// Metoda uruchamiana przed rozpoczęciem symulacji, przygotowuje dane do symulacji
+    /// The method, which is run before the simulation starts, prepares the data for simulation
     /// </summary>
     void Awake() {
         _instance = this;
@@ -104,17 +103,17 @@ public class PathFinder : MonoBehaviour {
 
     /// QPathFinder
     /// <summary>
-    /// Metoda uruchamiana przy niszczeniu obiektu
+    /// Method run when the object is destroyed
     /// </summary>
     void OnDestroy() {
         _instance = null;
     }
     /// <summary>
-    /// Metoda tworzy tablicę list miejsc, z których będą wyjeżdżały i przyjeżdżały pojazdy
+    /// The method creates an array of places from which vehicles will leave and arrive
     /// </summary>
-    /// <returns>Tablica przechowująca 5 list miejsc tworzenia: przyjezdnych, mieszkańców, miejsc handlowych, miejsc pracy, wyjeżdżających</returns>
+    /// <returns>A array storing 5 lists of places of creation: visitors, residents, commercial places, workplaces, people leaving</returns>
     List<int>[] MakeSpawnList() {
-        List<int>[] spawns = new List<int>[5];//przyjazd/dom/sklep/praca/wyjazd
+        List<int>[] spawns = new List<int>[5];//arrival / home / shop / work / departure
         for (int j = 0; j < 5; j++) {
             spawns[j] = new List<int>();
         }
@@ -130,9 +129,9 @@ public class PathFinder : MonoBehaviour {
         return spawns;
     }
     /// <summary>
-    /// Metoda odpowiada za stworzenie pojazdu zgodnie z harmonogramem
+    /// The method is responsible for creating the vehicle according to the schedule
     /// </summary>
-    /// <param name="spawns">Lista miejsc tworzenia pojazdów</param>
+    /// <param name="spawns">List of vehicle creation locations</param>
     void SpawnPredictably(List<int>[] spawns) {
         List<Node> nodePath = null, returnNodePath = null;
         int spawnType = -1, targetType = -1, spawn = -1, target = -1;
@@ -177,7 +176,7 @@ public class PathFinder : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Metoda odpowiada za stworzenie pojazdu jadącego do losowego celu
+    /// The method is responsible for creating a vehicle going to a random destination
     /// </summary>
     void SpawnRandom() {
         PathFollower follower = SpawnCar();
@@ -185,9 +184,9 @@ public class PathFinder : MonoBehaviour {
         follower.Follow(paths);
     }
     /// <summary>
-    /// Metoda odpowiada za stowrzenie obiektu pojazdu
+    /// The method is responsible for creating the vehicle object
     /// </summary>
-    /// <returns>Pojazd</returns>
+    /// <returns>Vehicle</returns>
     PathFollower SpawnCar() {
         if (!carsBox) {
             carsBox = (new GameObject("Cars")).transform;
@@ -200,9 +199,9 @@ public class PathFinder : MonoBehaviour {
         return follower;
     }
     /// <summary>
-    /// Metoda odpowiada za znalezienie trasy do losowego wierzchołka
+    /// The method is responsible for finding a route to a random node
     /// </summary>
-    /// <returns>Lista ścieżek</returns>
+    /// <returns>List of paths</returns>
     List<Path> RandomPath() {
         List<Node> nodes = null;
         while (nodes == null || nodes.Count == 0) {
@@ -219,7 +218,7 @@ public class PathFinder : MonoBehaviour {
         return path;
     }
     /// <summary>
-    /// Rutyna odpowiada za tworzenie pojazdów
+    /// Routine is responsible for creating vehicles
     /// </summary>
     /// <returns></returns>
     IEnumerator Spawn() {
@@ -240,7 +239,7 @@ public class PathFinder : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Rutyna odpowiada za usuwanie pojazdów, które dotarły do celu
+    /// Routine is responsible for removing vehicles that have reached their destination
     /// </summary>
     IEnumerator RemoveCars() {
         while (true) {
@@ -250,10 +249,10 @@ public class PathFinder : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Metoda odpowiada za zamianę listy wierzchołków na listę ścieżek
+    /// The method is responsible for converting the list of vertices into a list of paths
     /// </summary>
-    /// <param name="nodes">Lista wierzchołków</param>
-    /// <returns>Lista ścieżek</returns>
+    /// <param name="nodes">List of nodes</param>
+    /// <returns>List of paths</returns>
     List<Path> NodesToPath(List<Node> nodes) {
         List<Path> paths = new List<Path>();
         for (int i = 0; i < nodes.Count - 1; i++) {
@@ -262,14 +261,14 @@ public class PathFinder : MonoBehaviour {
             paths.Add(path);
         }
         return paths;
-    }    
+    }
     // QPathFinder
     /// <summary>
-    /// Metoda odpowiada za znalezienie ścieżki, między dwoma wierzchołkami
+    /// The method is responsible for finding the path between two vertices
     /// </summary>
-    // <param name="fromNodeID">Identyfikator początkowego wierzchołka</param>
-    // <param name="toNodeID">Identyfikator docelowego wierzchołka</param>
-    // <returns>Lista wierzchołków trasy</returns>
+    // <param name="fromNodeID">ID of first Node</param>
+    // <param name="toNodeID">ID of second Node</param>
+    // <returns>List nodes on paths</returns>
     private List<Node> FindShortedPathSynchronousInternal(int fromNodeID, int toNodeID) {
         int startPointID = fromNodeID;
         int endPointID = toNodeID;

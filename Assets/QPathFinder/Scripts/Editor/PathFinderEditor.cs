@@ -7,13 +7,10 @@ using UnityEditor.SceneManagement;
 
 /// QPathFinder modified
 /// <summary>
-/// Klasa odpowiada za wyœwietlanie graficznego interfejsu u¿ytkownika w oknie edycji
+/// Class is responsible for displaying GUI
 /// </summary>
 [CustomEditor(typeof(PathFinder))]
 public class PathFinderEditor : Editor {
-    /// <summary>
-    /// Typ wyliczeniowy trybów sceny: dodawanie skrzy¿owania, dodawanie ulicy, wybranie skrzy¿owania, wybranie ulicy, usuwanie skrzy¿owania, usuwanie ulicy, ¿aden
-    /// </summary>
     enum SceneMode {
         AddJunction,
         AddStreet,
@@ -29,7 +26,7 @@ public class PathFinderEditor : Editor {
     Street selectedStreet;
     int ifrom = 2, ito = 2;
     /// <summary>
-    /// Aktualnie wybrany tryb sceny
+    /// Selected scene mode 
     /// </summary>
     SceneMode sceneMode;
     PathFinder script;
@@ -55,7 +52,7 @@ public class PathFinderEditor : Editor {
 
     /// QPathFinder
     /// <summary>
-    /// Metoda uruchamiana podczas korzystania z interfejsu w oknie edycji
+    /// Method running when user using scene window
     /// </summary>
     void OnSceneGUI() {
         int controlID = GUIUtility.GetControlID(FocusType.Passive);
@@ -70,7 +67,7 @@ public class PathFinderEditor : Editor {
 
     /// QPathFinder modified
     /// <summary>
-    /// Metoda odpowiada za wyœwietlanie okienka w oknie edycji
+    /// Method is responsible for display window in scene window
     /// </summary>
     void DrawGUIWindowOnScene() {
         GUILayout.Window(1, new Rect(0f, 25f, 70f, 80f), delegate (int windowID) {
@@ -196,7 +193,7 @@ public class PathFinderEditor : Editor {
                     selectedStreet.RecalcJunction();
                     script.graphData.ReGenerateIDs();
                 }
-                //przyjezdni przybysz delegat / domy mieszkañcy / sklep miejsca handlowe / praca miejsca pracy / wyje¿d¿aj¹cy emigranci 
+                // delegate / inhabitants / commercial places / work places / emigrants 
                 string[] describe = new string[5] { "Incoming", "Inhabitants", "Shopping places", "Work places", "Leaving" };
                 Color[] col = new Color[5] { new Color(0.9f, 0.9f, 0.9f), new Color(0, 1, 0), new Color(0, 0.75f, 1), new Color(1, 1, 0), new Color(1, 0.58f, 0.62f) };
                 for (int i = 0; i < 5; i++) {
@@ -217,7 +214,7 @@ public class PathFinderEditor : Editor {
 
     /// QPathFinder modified
     /// <summary>
-    /// Metoda odpowiada za wizualizacje po³¹czeñ œcie¿ek
+    /// The method is responsible for the visualization of paths
     /// </summary>
     void DrawPathLine() {
         if (script == null || script.graphData == null || script.graphData.nodes == null)
@@ -320,7 +317,7 @@ public class PathFinderEditor : Editor {
 
     /// QPathFindermodified
     /// <summary>
-    /// Metoda odpowiada za przechwytywanie wydarzeñ myszy
+    /// The method is responsible for capturing mouse events
     /// </summary>
     void UpdateMouseInput() {
         Event e = Event.current;
@@ -331,9 +328,9 @@ public class PathFinderEditor : Editor {
 
     /// QPathFinder modified
     /// <summary>
-    /// Metoda odpowiada za reakcjê na klik myszy
+    /// The method is responsible for the reaction to the click of the mouse
     /// </summary>
-    /// <param name="mousePos">Pozycja kursora w przestrzeni dwuwymiarowej</param>
+    /// <param name="mousePos">Position of cursor</param>
     void OnMouseClick(Vector2 mousePos) {
         LayerMask backgroundLayerMask = 1 << LayerMask.NameToLayer(groundColliderLayerName);
         Ray ray = HandleUtility.GUIPointToWorldRay(mousePos);
@@ -407,9 +404,9 @@ public class PathFinderEditor : Editor {
     }
 
     /// <summary>
-    /// Metoda odpowiada za stworzenie skrzy¿owania
+    /// Method is responsible for creating junction
     /// </summary>
-    /// <param name="position">Pozycja tworzonego skrzy¿owania</param>
+    /// <param name="position">Position where junction should be created</param>
     Junction CreateJunction(Vector3 position) {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         go.GetComponent<CapsuleCollider>().radius = 2f;
@@ -424,10 +421,10 @@ public class PathFinderEditor : Editor {
         return junction;
     }
     /// <summary>
-    /// Metoda odpowiada za stworzenie ulicy
+    /// Method responsible for creating new street
     /// </summary>
-    /// <param name="a">Pierwsze skrzy¿owanie</param>
-    /// <param name="b">Drugie skrzy¿owanie</param>
+    /// <param name="a">First junction</param>
+    /// <param name="b">Second junction</param>
     void CreateStreet(Junction a, Junction b) {
         GameObject go = new GameObject("Street");
         go.transform.parent = script.transform;
@@ -437,9 +434,9 @@ public class PathFinderEditor : Editor {
         RefreshData();
     }
     /// <summary>
-    /// Metoda odpowiada za usuniêcie skrzy¿owania
+    /// Method responsible for deleting junction
     /// </summary>
-    /// <param name="junction">Wybrane skrzy¿owanie</param>
+    /// <param name="junction">Selected junction</param>
     void DeleteJunction(Junction junction) {
         foreach (Joint jo in junction.joints) {
             script.graphData.allStreets.Remove(jo.street);
@@ -449,16 +446,16 @@ public class PathFinderEditor : Editor {
         RefreshData();
     }
     /// <summary>
-    /// Metoda odpowiada za usuniêcie ulicy
+    /// Method responsible for deleting street
     /// </summary>
-    /// <param name="street">Wybrana ulica</param>
+    /// <param name="street">Selected Street</param>
     void DeleteStreet(Street street) {
         script.graphData.allStreets.Remove(street);
         street.Destroy();
         RefreshData();
     }
     /// <summary>
-    /// Metoda odpowiada za przeliczenie ulic i skrzy¿owañ oraz odœwie¿enie identyfikatorów wierzcho³ków i œcie¿ek
+    /// Method responsible for recalculate streets, junctions and refresh IDs of paths and nodes
     /// </summary>
     void RefreshData() {
         foreach (Street s in script.graphData.allStreets) {
@@ -471,7 +468,7 @@ public class PathFinderEditor : Editor {
         script.graphData.ReGenerateIDs();
     }
     /// <summary>
-    /// Metoda odpowiada za usuniêcie danych grafu
+    /// Deletes all graph data
     /// </summary>
     void ClearAll() {
         script.graphData.Clear();
@@ -479,7 +476,7 @@ public class PathFinderEditor : Editor {
 
     /// QPathFinder modified
     /// <summary>
-    /// Metoda uruchamiana przy aktywacji obiektu
+    /// Method running when object is Enable
     /// </summary>
     void OnEnable() {
         sceneMode = SceneMode.None;
@@ -490,15 +487,15 @@ public class PathFinderEditor : Editor {
         }
     }
     /// <summary>
-    /// Metoda uruchamiana przy deaktywacji obiektu
+    /// Method running when object is Disable
     /// </summary>
     void OnDisable() {
         EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
     }
     /// <summary>
-    /// Metoda uruchamiana przy wchodzeniu i wychodzeniu z trybu symulacji 
+    /// Method runs when simulation starts or ends
     /// </summary>
-    /// <param name="state">Stan trybu symulacji</param>
+    /// <param name="state">State of simulation</param>
     void OnPlayModeStateChanged(PlayModeStateChange state) {
         if (state == PlayModeStateChange.EnteredEditMode) {
             script.graphData.LoadTimers();

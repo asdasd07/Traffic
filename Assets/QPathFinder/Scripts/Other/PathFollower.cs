@@ -5,12 +5,12 @@ using UnityEngine;
 
 /// QPathFinder modified
 /// <summary>
-/// Pojazd
+/// Vahicle
 /// </summary>
 public class PathFollower : MonoBehaviour {
     public float velocity = 0;
     /// <summary>
-    /// Przechowuje listę ścieżek, po której pojazd ma wrócić
+    /// Stores a list of paths for the vehicle to return to
     /// </summary>
     List<Path> returningPath;
     float returningDelay; 
@@ -20,7 +20,7 @@ public class PathFollower : MonoBehaviour {
     Material material;
     Coroutine routine;
     /// <summary>
-    /// Metoda uruchamiana przy tworzeniu obiektu
+    /// Method run when the object is created
     /// </summary>
     void Awake() {
         mesh = GetComponent<MeshRenderer>();
@@ -31,12 +31,12 @@ public class PathFollower : MonoBehaviour {
         mesh.material = material;
     }
     /// <summary>
-    /// Metoda odpowiada za przypisanie trasy podróży i jej rozpoczęcie
+    /// The method is responsible for assigning the travel route and its start
     /// </summary>
-    /// <param name="Path">Lista ścieżek trasy</param>
-    /// <param name="ReturningType">Rodzaj powrotu: -1 brak, 2 z miejsca handlowego, 3 z miejsca pracy</param>
-    /// <param name="WaitingTime">Czas pobytu w miejscu docelowym</param>
-    /// <param name="ReturningPath">Lista ścieżek trasy powrotnej</param>
+    /// <param name="Path">List paths of route</param>
+    /// <param name="ReturningType">Type of return: -1 none, 2 from the place of sale, 3 from the place of work</param>
+    /// <param name="WaitingTime">Time of stay at the destination</param>
+    /// <param name="ReturningPath">List of paths return route</param>
     public void Follow(List<Path> Path, int ReturningType = -1, float WaitingTime = 0, List<Path> ReturningPath = null) {
         returningType = ReturningType;
         returningDelay = WaitingTime;
@@ -47,9 +47,9 @@ public class PathFollower : MonoBehaviour {
         routine = StartCoroutine(FollowRoutine(Path));
     }
     /// <summary>
-    /// Rutyna odpowiada za jazdę pojazdu po trasie
+    /// Routine is responsible for driving the vehicle along the route
     /// </summary>
-    /// <param name="path">Lista ścieżek tworzących trasę</param>
+    /// <param name="path">List of paths making the route</param>
     IEnumerator FollowRoutine(List<Path> path) {
         if (path == null || path.Count < 1) {
             Debug.Log("path empty");
@@ -156,7 +156,7 @@ public class PathFollower : MonoBehaviour {
         }
     }
     /// <summary>
-    /// Odpowiada za przerwanie rutyny podróży
+    /// Responsible for abort the travel routine
     /// </summary>
     public void StopFollowing() { StopAllCoroutines(); }
 

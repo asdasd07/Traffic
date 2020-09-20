@@ -3,44 +3,42 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// QPathFinder
-/// Single Node. From which we can create Paths ( or connections )
 /// <summary>
-/// Wierzchołek grafu
+/// Single Node. From which will be created Paths
 /// </summary>
-/// Element składowy grafu
 [System.Serializable]
 public class Node {
     /// <summary>
-    /// Konstruktor
+    /// Construktor
     /// </summary>
-    /// <param name="Position">Pozycja wierzchołka w przestrzeni trójwymiarowej</param>
+    /// <param name="Position">Position of node</param>
     public Node(Vector3 Position) { position = Position; }
     /// <summary>
-    /// Przechowuje pozycje wierzchołka w przestrzeni trójwymiarowej
+    /// Position of node
     /// </summary>
     [SerializeField] public Vector3 position;
     /// <summary>
-    /// Przechowuje identyfikator wierzchołka
+    /// ID of node
     /// </summary>
     [SerializeField] public int ID = -1;
     /// QPathFinder
     /// <summary>
-    /// Przechowuje odległość przewidywaną przez heurystykę
+    /// Distance calculated by heuristic
     /// </summary>
     [HideInInspector] public float heuristicDistance;
     /// QPathFinder
     /// <summary>
-    /// Przechowuje odległość od punktu początkowego
+    /// Distance from first node
     /// </summary>
     [HideInInspector] public float pathDistance;
     /// QPathFinder
     /// <summary>
-    /// Przechowuje poprzedni wierzchołek
+    /// Distance from previous node
     /// </summary>
     [HideInInspector] public Node previousNode;
     /// QPathFinder
     /// <summary>
-    /// Zwraca sumę odległości
+    /// Return sum of distance
     /// </summary>
     [HideInInspector]
     public float CombinedHeuristic {
